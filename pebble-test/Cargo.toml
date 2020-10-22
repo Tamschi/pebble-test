@@ -1,0 +1,20 @@
+[package]
+name = "pebble-test"
+version = "0.1.0"
+authors = ["Tamme Schichler <tamme@schichler.dev>"]
+edition = "2018"
+
+autotests = false
+autobenches = false
+
+[lib]
+name = "pebble_test"
+crate-type = ["staticlib"]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+
+[dependencies]

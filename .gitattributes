@@ -1,0 +1,2 @@
+* text eol=lf
+*.bz2 filter=lfs diff=lfs merge=lfs -text
