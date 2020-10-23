@@ -1,14 +1,9 @@
 #![no_std]
 
-use core::panic::PanicInfo;
-use pebble::app;
-
-#[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    loop {}
-}
+use pebble::{app, window::Window};
 
 #[no_mangle]
 pub extern "C" fn main() {
+    let window = Window::new(|| (), |_| (), |_| (), |_| ());
     app::event_loop();
 }
