@@ -13,28 +13,59 @@ pub mod window {
     use pebble_sys::*;
 
     pub struct Window<'a, T>(pub(crate) *mut pebble_sys::Window, PhantomData<&'a T>);
-    struct WindowData<'a, T> {
-        user_data: Option<T>,
-        load: Box<dyn 'a + FnMut() -> T>,
-        appear: Box<dyn 'a + FnMut(&mut T)>,
-        disappear: Box<dyn 'a + FnMut(&mut T)>,
-        unload: Box<dyn 'a + FnMut(T)>,
+
+    pub struct WindowHandlers<L: FnMut() -> T, A: FnMut(&mut T), D: FnMut(&mut T), U: FnMut(T), T> {
+        pub load: L,
+        pub appear: A,
+        pub disappear: D,
+        pub unload: U,
     }
 
-    impl<'a, T> Window<'a, T> {
-        pub fn new(
-            load: impl 'a + FnMut() -> T,
-            appear: impl 'a + FnMut(&mut T),
-            disappear: impl 'a + FnMut(&mut T),
-            unload: impl 'a + FnMut(T),
+    trait WindowHandlersTrait<T> {
+        fn load(&mut self) -> T;
+        fn appear(&mut self, data: &mut T);
+        fn disappear(&mut self, data: &mut T);
+        fn unload(&mut self, data: T);
+    }
+
+    impl<L: FnMut() -> T, A: FnMut(&mut T), D: FnMut(&mut T), U: FnMut(T), T> WindowHandlersTrait<T>
+        for WindowHandlers<L, A, D, U, T>
+    {
+        fn load(&mut self) -> T {
+            (self.load)()
+        }
+
+        fn appear(&mut self, data: &mut T) {
+            (self.appear)(data)
+        }
+
+        fn disappear(&mut self, data: &mut T) {
+            (self.disappear)(data)
+        }
+
+        fn unload(&mut self, data: T) {
+            (self.unload)(data)
+        }
+    }
+
+    struct WindowData<'a, T> {
+        user_data: Option<T>,
+        window_handlers: Box<dyn 'a + WindowHandlersTrait<T>>,
+    }
+
+    impl<'a, T: 'a> Window<'a, T> {
+        pub fn new<
+            L: 'a + FnMut() -> T,
+            A: 'a + FnMut(&mut T),
+            D: 'a + FnMut(&mut T),
+            U: 'a + FnMut(T),
+        >(
+            window_handlers: WindowHandlers<L, A, D, U, T>,
         ) -> Self {
             let raw_window = unsafe { window_create() };
             let window_data = Box::new(WindowData {
                 user_data: None,
-                load: Box::new(load),
-                appear: Box::new(appear),
-                disappear: Box::new(disappear),
-                unload: Box::new(unload),
+                window_handlers: Box::new(window_handlers),
             });
 
             unsafe extern "C" fn raw_load<T>(raw_window: *mut pebble_sys::Window) {
@@ -42,28 +73,34 @@ pub mod window {
                     .cast::<WindowData<T>>()
                     .as_mut()
                     .unwrap();
-                window_data.user_data = Some((window_data.load)());
+                window_data.user_data = Some(window_data.window_handlers.load());
             }
             unsafe extern "C" fn raw_appear<T>(raw_window: *mut pebble_sys::Window) {
                 let window_data = window_get_user_data(raw_window)
                     .cast::<WindowData<T>>()
                     .as_mut()
                     .unwrap();
-                (window_data.appear)(window_data.user_data.as_mut().unwrap());
+                window_data
+                    .window_handlers
+                    .appear(window_data.user_data.as_mut().unwrap());
             }
             unsafe extern "C" fn raw_disappear<T>(raw_window: *mut pebble_sys::Window) {
                 let window_data = window_get_user_data(raw_window)
                     .cast::<WindowData<T>>()
                     .as_mut()
                     .unwrap();
-                (window_data.disappear)(window_data.user_data.as_mut().unwrap());
+                window_data
+                    .window_handlers
+                    .disappear(window_data.user_data.as_mut().unwrap());
             }
             unsafe extern "C" fn raw_unload<T>(raw_window: *mut pebble_sys::Window) {
                 let window_data = window_get_user_data(raw_window)
                     .cast::<WindowData<T>>()
                     .as_mut()
                     .unwrap();
-                (window_data.unload)(window_data.user_data.take().unwrap());
+                window_data
+                    .window_handlers
+                    .unload(window_data.user_data.take().unwrap());
             }
 
             unsafe {
@@ -74,7 +111,7 @@ pub mod window {
                 );
                 window_set_window_handlers(
                     raw_window,
-                    WindowHandlers {
+                    pebble_sys::WindowHandlers {
                         load: raw_load::<T>,
                         appear: raw_appear::<T>,
                         disappear: raw_disappear::<T>,
