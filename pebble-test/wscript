@@ -38,7 +38,7 @@ def build(ctx):
         ctx.env.LINKFLAGS += glob.glob('../target/arm-none-eabi/release/*.a')
         os.chdir('..')
 
-        ctx.pbl_program(source=ctx.path.ant_glob('src/(*.c)'),
+        ctx.pbl_program(source=ctx.path.ant_glob('src/**/*.c'),
         target=app_elf)
 
         if build_worker:

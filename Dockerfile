@@ -62,11 +62,23 @@ RUN echo $PATH
 RUN . ~/.bashrc_non_interactive; rustup component add rust-src
 RUN . ~/.bashrc_non_interactive; cargo install xargo
 
+
+# Just testing:
+# RUN apt-get install -y git
+# RUN git clone https://github.com/pebble-examples/cards-example.git /workspace/cards-example
+# WORKDIR /workspace/cards-example
+# RUN tree
+# RUN . ~/.bashrc_non_interactive; pebble build
+# RUN tree
+
 # Build it!
-WORKDIR /workspace
-COPY /pebble-test ./pebble-test
+COPY /pebble-test/src /workspace/pebble-test/src
+COPY /pebble-test/Cargo.toml /pebble-test/arm-none-eabi.json /workspace/pebble-test/
 WORKDIR /workspace/pebble-test
+RUN tree
 RUN . ~/.bashrc_non_interactive; xargo build --release --target arm-none-eabi
 RUN tree
 
+COPY /pebble-test /workspace/pebble-test
+RUN tree
 RUN . ~/.bashrc_non_interactive; pebble build
