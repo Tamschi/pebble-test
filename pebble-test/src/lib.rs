@@ -1,19 +1,14 @@
 #![no_std]
 
 use core::panic::PanicInfo;
+use pebble::app;
 
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
 
-extern "C" {
-    fn app_event_loop();
-}
-
 #[no_mangle]
 pub extern "C" fn main() {
-    unsafe {
-        app_event_loop();
-    }
+    app::event_loop();
 }

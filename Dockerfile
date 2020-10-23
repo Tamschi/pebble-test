@@ -43,7 +43,7 @@ RUN touch ~/.pebble-sdk/NO_TRACKING
 RUN curl https://bootstrap.pypa.io/2.6/get-pip.py | python2 -
 RUN pip install virtualenv
 # --no-site-packages isn't supported anymore, but is the default.
-RUN cd ~/pebble-dev/pebble-sdk-4.5-linux64 && bash -c "virtualenv .env; source .env/bin/activate; pip install -r requirements.txt; locale; deactivate"
+RUN cd ~/pebble-dev/pebble-sdk-4.5-linux64 && bash -c "virtualenv .env; source .env/bin/activate; pip install -r requirements.txt; deactivate"
 
 # Install SDK
 #RUN . ~/.bashrc_non_interactive; pebble sdk install https://github.com/aveao/PebbleArchive/raw/master/SDKCores/sdk-core-4.3.tar.bz2
@@ -62,16 +62,9 @@ RUN echo $PATH
 RUN . ~/.bashrc_non_interactive; rustup component add rust-src
 RUN . ~/.bashrc_non_interactive; cargo install xargo
 
-
-# Just testing:
-# RUN apt-get install -y git
-# RUN git clone https://github.com/pebble-examples/cards-example.git /workspace/cards-example
-# WORKDIR /workspace/cards-example
-# RUN tree
-# RUN . ~/.bashrc_non_interactive; pebble build
-# RUN tree
-
 # Build it!
+COPY /pebble /workspace/pebble
+COPY /pebble-sys /workspace/pebble-sys
 COPY /pebble-test/src /workspace/pebble-test/src
 COPY /pebble-test/Cargo.toml /pebble-test/arm-none-eabi.json /workspace/pebble-test/
 WORKDIR /workspace/pebble-test

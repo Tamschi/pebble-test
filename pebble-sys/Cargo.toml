@@ -1,0 +1,8 @@
+[package]
+name = "pebble-sys"
+version = "0.0.1"
+authors = ["Tamme Schichler <tamme@schichler.dev>"]
+edition = "2018"
+publish = false
+
+[dependencies]

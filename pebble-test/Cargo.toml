@@ -18,3 +18,4 @@ panic = "abort"
 panic = "abort"
 
 [dependencies]
+pebble = { path = "../pebble" }
