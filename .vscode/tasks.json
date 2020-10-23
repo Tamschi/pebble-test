@@ -1,0 +1,42 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build Container",
+			"command": "docker",
+			"type": "shell",
+			"args": [
+				"build",
+				"-t",
+				"pebble-builder",
+				"\"${workspaceFolder}\""
+			],
+			"problemMatcher": [],
+			"presentation": {
+				"reveal": "always",
+			},
+			"group": "build"
+		},
+		{
+			"label": "Pebble Build",
+			"command": "docker ",
+			"type": "shell",
+			"args": [
+				"run",
+				"-e",
+				"\"PACKAGE=pebble-test\"",
+				"--mount",
+				"type=bind,source=\"${workspaceFolder}\",target=/mnt/workspace",
+				"pebble-builder"
+			],
+			"problemMatcher": [],
+			"presentation": {
+				"reveal": "always"
+			},
+			"group": "build",
+			"dependsOn": [
+				"Build Container"
+			]
+		}
+	]
+}

@@ -5,14 +5,14 @@ COPY sdk-core-4.3.tar.bz2 /root/Downloads/sdk-core-4.3.tar.bz2
 # Prerequisites
 RUN apt-get update
 RUN apt-get install -y \
-# for this Dockerfile
-curl tree \
-# Pebble
-gcc python2-dev \
-# Rust
-lld \
-# Pebble emulator
-libsdl1.2debian libfdt1 libpixman-1-0
+	# for this Dockerfile
+	curl tree \
+	# Pebble
+	gcc python2-dev \
+	# Rust
+	lld \
+	# Pebble emulator
+	libsdl1.2debian libfdt1 libpixman-1-0
 
 # Also Pebble.
 # This one pulls A TON of dependencies, and one of them is tzdata which is interactive by default.
@@ -63,15 +63,9 @@ RUN . ~/.bashrc_non_interactive; rustup component add rust-src
 RUN . ~/.bashrc_non_interactive; cargo install xargo
 
 # Build it!
-COPY /pebble /workspace/pebble
-COPY /pebble-sys /workspace/pebble-sys
-COPY /pebble-test/src /workspace/pebble-test/src
-COPY /pebble-test/Cargo.toml /pebble-test/arm-none-eabi.json /workspace/pebble-test/
-WORKDIR /workspace/pebble-test
-RUN tree
-RUN . ~/.bashrc_non_interactive; xargo build --release --target arm-none-eabi
-RUN tree
+COPY build.sh ~/build.sh
+RUN chmod +x ~/build.sh
 
-COPY /pebble-test /workspace/pebble-test
-RUN tree
-RUN . ~/.bashrc_non_interactive; pebble build
+# Mount your workspace to /mnt/workspace.
+# Set $PACKAGE to the package name you want to build.
+CMD ["~/build.sh"]
