@@ -12,7 +12,7 @@ pub mod window {
     use core::marker::PhantomData;
     use pebble_sys::*;
 
-    pub struct Window<'a, T>(*mut pebble_sys::Window, PhantomData<&'a T>);
+    pub struct Window<'a, T>(pub(crate) *mut pebble_sys::Window, PhantomData<&'a T>);
     struct WindowData<'a, T> {
         user_data: Option<T>,
         load: Box<dyn 'a + FnMut() -> T>,
@@ -85,8 +85,20 @@ pub mod window {
             Self(raw_window, PhantomData)
         }
 
+        pub unsafe fn from_raw(raw_window: *mut pebble_sys::Window) -> Self {
+            Self(raw_window, PhantomData)
+        }
+
         pub fn is_loaded(&self) -> bool {
             unsafe { window_is_loaded(self.0) }
+        }
+
+        pub fn show(&self, animated: bool) {
+            crate::window_stack::push(self, animated)
+        }
+
+        pub fn hide(&self, animated: bool) -> bool {
+            crate::window_stack::remove(self, animated)
         }
     }
 
@@ -99,5 +111,34 @@ pub mod window {
                 Box::<WindowData<T>>::from_raw(window_data.cast());
             }
         }
+    }
+}
+
+pub mod window_stack {
+    use crate::window::Window;
+    use pebble_sys::*;
+
+    pub fn push<T>(window: &Window<T>, animated: bool) {
+        unsafe { window_stack_push(window.0, animated) }
+    }
+
+    pub fn pop(animated: bool) -> bool {
+        !unsafe { window_stack_pop(animated) }.is_null()
+    }
+
+    pub fn pop_all(animated: bool) {
+        unsafe { window_stack_pop_all(animated) }
+    }
+
+    pub fn remove<T>(window: &Window<T>, animated: bool) -> bool {
+        unsafe { window_stack_remove(window.0, animated) }
+    }
+
+    pub fn is_empty() -> bool {
+        unsafe { window_stack_get_top_window() }.is_null()
+    }
+
+    pub fn contains_window<T>(window: &Window<T>) -> bool {
+        unsafe { window_stack_contains_window(window.0) }
     }
 }
