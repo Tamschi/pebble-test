@@ -3,6 +3,7 @@ name = "pebble-test"
 version = "0.1.0"
 authors = ["Tamme Schichler <tamme@schichler.dev>"]
 edition = "2018"
+publish = false
 
 autotests = false
 autobenches = false
