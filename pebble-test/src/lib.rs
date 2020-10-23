@@ -15,7 +15,8 @@ pub extern "C" fn main() {
         appear: |_s| (),
         disappear: |_s| (),
         unload: |_s| (),
-    });
+    })
+    .unwrap();
     window.show(true);
     app::event_loop();
 }

@@ -11,8 +11,9 @@ pub mod app {
 pub mod window {
     use core::marker::PhantomData;
     use pebble_sys::*;
+    use std::ptr::NonNull;
 
-    pub struct Window<'a, T>(pub(crate) *mut pebble_sys::Window, PhantomData<&'a T>);
+    pub struct Window<'a, T>(pub(crate) NonNull<pebble_sys::Window>, PhantomData<&'a T>);
 
     pub struct WindowHandlers<L: FnMut() -> T, A: FnMut(&mut T), D: FnMut(&mut T), U: FnMut(T), T> {
         pub load: L,
@@ -61,21 +62,21 @@ pub mod window {
             U: 'a + FnMut(T),
         >(
             window_handlers: WindowHandlers<L, A, D, U, T>,
-        ) -> Self {
-            let raw_window = unsafe { window_create() };
+        ) -> Result<Self, ()> {
+            let raw_window = NonNull::new(unsafe { window_create() }).ok_or(())?;
             let window_data = Box::new(WindowData {
                 user_data: None,
                 window_handlers: Box::new(window_handlers),
             });
 
-            unsafe extern "C" fn raw_load<T>(raw_window: *mut pebble_sys::Window) {
+            unsafe extern "C" fn raw_load<T>(raw_window: NonNull<pebble_sys::Window>) {
                 let window_data = window_get_user_data(raw_window)
                     .cast::<WindowData<T>>()
                     .as_mut()
                     .unwrap();
                 window_data.user_data = Some(window_data.window_handlers.load());
             }
-            unsafe extern "C" fn raw_appear<T>(raw_window: *mut pebble_sys::Window) {
+            unsafe extern "C" fn raw_appear<T>(raw_window: NonNull<pebble_sys::Window>) {
                 let window_data = window_get_user_data(raw_window)
                     .cast::<WindowData<T>>()
                     .as_mut()
@@ -84,7 +85,7 @@ pub mod window {
                     .window_handlers
                     .appear(window_data.user_data.as_mut().unwrap());
             }
-            unsafe extern "C" fn raw_disappear<T>(raw_window: *mut pebble_sys::Window) {
+            unsafe extern "C" fn raw_disappear<T>(raw_window: NonNull<pebble_sys::Window>) {
                 let window_data = window_get_user_data(raw_window)
                     .cast::<WindowData<T>>()
                     .as_mut()
@@ -93,7 +94,7 @@ pub mod window {
                     .window_handlers
                     .disappear(window_data.user_data.as_mut().unwrap());
             }
-            unsafe extern "C" fn raw_unload<T>(raw_window: *mut pebble_sys::Window) {
+            unsafe extern "C" fn raw_unload<T>(raw_window: NonNull<pebble_sys::Window>) {
                 let window_data = window_get_user_data(raw_window)
                     .cast::<WindowData<T>>()
                     .as_mut()
@@ -119,11 +120,11 @@ pub mod window {
                     },
                 )
             }
-            Self(raw_window, PhantomData)
+            Ok(Self(raw_window, PhantomData))
         }
 
-        pub unsafe fn from_raw(raw_window: *mut pebble_sys::Window) -> Self {
-            Self(raw_window, PhantomData)
+        pub unsafe fn from_raw(raw_window: *mut pebble_sys::Window) -> Result<Self, ()> {
+            Ok(Self(NonNull::new(raw_window).ok_or(())?, PhantomData))
         }
 
         pub fn is_loaded(&self) -> bool {
@@ -168,7 +169,7 @@ pub mod window_stack {
     }
 
     pub fn remove<T>(window: &Window<T>, animated: bool) -> bool {
-        unsafe { window_stack_remove(window.0, animated) }
+        unsafe { window_stack_remove(window.0.as_ptr(), animated) }
     }
 
     pub fn is_empty() -> bool {
