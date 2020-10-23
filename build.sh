@@ -1,6 +1,12 @@
 #! /bin/bash
 
-cd /mnt/workspace
+set -e
+. ~/.bashrc_non_interactive
 
-RUN . ~/.bashrc_non_interactive; xargo build --$PACKAGE --release --target arm-none-eabi
-RUN . ~/.bashrc_non_interactive; pebble build
+cd /mnt/workspace
+cargo clean
+
+cd $FOLDER
+
+xargo build --release --target arm-none-eabi
+pebble build

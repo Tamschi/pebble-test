@@ -19,12 +19,12 @@
 		},
 		{
 			"label": "Pebble Build",
-			"command": "docker ",
+			"command": "docker",
 			"type": "shell",
 			"args": [
 				"run",
 				"-e",
-				"\"PACKAGE=pebble-test\"",
+				"\"FOLDER=pebble-test\"",
 				"--mount",
 				"type=bind,source=\"${workspaceFolder}\",target=/mnt/workspace",
 				"pebble-builder"

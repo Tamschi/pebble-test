@@ -63,9 +63,9 @@ RUN . ~/.bashrc_non_interactive; rustup component add rust-src
 RUN . ~/.bashrc_non_interactive; cargo install xargo
 
 # Build it!
-COPY build.sh ~/build.sh
+COPY build.sh /root/build.sh
 RUN chmod +x ~/build.sh
 
 # Mount your workspace to /mnt/workspace.
 # Set $PACKAGE to the package name you want to build.
-CMD ["~/build.sh"]
+CMD ["sh", "-v", "/root/build.sh"]

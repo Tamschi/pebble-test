@@ -1,0 +1,6 @@
+# [dependencies.alloc]
+# [dependencies.panic_abort]
+# [dependencies.panic_unwind]
+
+# [dependencies.core]
+# stage = 1
