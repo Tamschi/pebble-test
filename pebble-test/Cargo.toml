@@ -12,11 +12,5 @@ autobenches = false
 name = "pebble_test"
 crate-type = ["staticlib"]
 
-[profile.dev]
-panic = "abort"
-
-[profile.release]
-panic = "abort"
-
 [dependencies]
 pebble = { path = "../pebble" }
