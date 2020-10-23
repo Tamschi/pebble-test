@@ -17,10 +17,10 @@ pub enum GColor8 {
 
 #[repr(C)]
 pub struct WindowHandlers {
-    pub load: unsafe extern "C" fn(NonNull<Window>),
-    pub appear: unsafe extern "C" fn(NonNull<Window>),
-    pub disappear: unsafe extern "C" fn(NonNull<Window>),
-    pub unload: unsafe extern "C" fn(NonNull<Window>),
+    pub load: extern "C" fn(NonNull<Window>),
+    pub appear: extern "C" fn(NonNull<Window>),
+    pub disappear: extern "C" fn(NonNull<Window>),
+    pub unload: extern "C" fn(NonNull<Window>),
 }
 
 extern "C" {

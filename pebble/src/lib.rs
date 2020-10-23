@@ -69,36 +69,44 @@ pub mod window {
                 window_handlers: Box::new(window_handlers),
             });
 
-            unsafe extern "C" fn raw_load<T>(raw_window: NonNull<pebble_sys::Window>) {
-                let window_data = window_get_user_data(raw_window)
-                    .cast::<WindowData<T>>()
-                    .as_mut()
-                    .unwrap();
+            extern "C" fn raw_load<T>(raw_window: NonNull<pebble_sys::Window>) {
+                let window_data = unsafe {
+                    window_get_user_data(raw_window)
+                        .cast::<WindowData<T>>()
+                        .as_mut()
+                }
+                .unwrap();
                 window_data.user_data = Some(window_data.window_handlers.load());
             }
-            unsafe extern "C" fn raw_appear<T>(raw_window: NonNull<pebble_sys::Window>) {
-                let window_data = window_get_user_data(raw_window)
-                    .cast::<WindowData<T>>()
-                    .as_mut()
-                    .unwrap();
+            extern "C" fn raw_appear<T>(raw_window: NonNull<pebble_sys::Window>) {
+                let window_data = unsafe {
+                    window_get_user_data(raw_window)
+                        .cast::<WindowData<T>>()
+                        .as_mut()
+                }
+                .unwrap();
                 window_data
                     .window_handlers
                     .appear(window_data.user_data.as_mut().unwrap());
             }
-            unsafe extern "C" fn raw_disappear<T>(raw_window: NonNull<pebble_sys::Window>) {
-                let window_data = window_get_user_data(raw_window)
-                    .cast::<WindowData<T>>()
-                    .as_mut()
-                    .unwrap();
+            extern "C" fn raw_disappear<T>(raw_window: NonNull<pebble_sys::Window>) {
+                let window_data = unsafe {
+                    window_get_user_data(raw_window)
+                        .cast::<WindowData<T>>()
+                        .as_mut()
+                }
+                .unwrap();
                 window_data
                     .window_handlers
                     .disappear(window_data.user_data.as_mut().unwrap());
             }
-            unsafe extern "C" fn raw_unload<T>(raw_window: NonNull<pebble_sys::Window>) {
-                let window_data = window_get_user_data(raw_window)
-                    .cast::<WindowData<T>>()
-                    .as_mut()
-                    .unwrap();
+            extern "C" fn raw_unload<T>(raw_window: NonNull<pebble_sys::Window>) {
+                let window_data = unsafe {
+                    window_get_user_data(raw_window)
+                        .cast::<WindowData<T>>()
+                        .as_mut()
+                }
+                .unwrap();
                 window_data
                     .window_handlers
                     .unload(window_data.user_data.take().unwrap());
