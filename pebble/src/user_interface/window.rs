@@ -1,11 +1,11 @@
 use super::window_stack;
 use crate::Box;
-use core::{marker::PhantomData, mem::ManuallyDrop, ptr::NonNull};
+use core::{marker::PhantomData, mem::forget, ptr::NonNull};
 use pebble_sys::user_interface::window::{
 	Window as sysWindow, WindowHandlers as sysWindowHandlers, *,
 };
 
-pub struct Window<T>(pub(crate) NonNull<sysWindow>, PhantomData<T>);
+pub struct Window<T>(pub(crate) &'static mut sysWindow, PhantomData<T>);
 
 pub struct WindowHandlers<L: FnMut() -> T, A: FnMut(&mut T), D: FnMut(&mut T), U: FnMut(T), T> {
 	pub load: L,
@@ -70,7 +70,7 @@ impl<'a, T: 'a> Window<T> {
 				Box::downcast_unchecked(window_data.window_handlers)
 			}),
 		})?;
-		let raw_window = match NonNull::new(unsafe { window_create() }) {
+		let raw_window = match unsafe { window_create() } {
 			Some(raw_window) => raw_window,
 			None => {
 				return Err(WindowCreationError {
@@ -81,7 +81,7 @@ impl<'a, T: 'a> Window<T> {
 			}
 		};
 
-		extern "C" fn raw_load<T>(raw_window: NonNull<sysWindow>) {
+		extern "C" fn raw_load<T>(raw_window: &mut sysWindow) {
 			let window_data = unsafe {
 				window_get_user_data(raw_window)
 					.cast::<WindowData<T>>()
@@ -90,7 +90,7 @@ impl<'a, T: 'a> Window<T> {
 			.unwrap();
 			window_data.user_data = Some(window_data.window_handlers.load());
 		}
-		extern "C" fn raw_appear<T>(raw_window: NonNull<sysWindow>) {
+		extern "C" fn raw_appear<T>(raw_window: &mut sysWindow) {
 			let window_data = unsafe {
 				window_get_user_data(raw_window)
 					.cast::<WindowData<T>>()
@@ -101,7 +101,7 @@ impl<'a, T: 'a> Window<T> {
 				.window_handlers
 				.appear(window_data.user_data.as_mut().unwrap());
 		}
-		extern "C" fn raw_disappear<T>(raw_window: NonNull<sysWindow>) {
+		extern "C" fn raw_disappear<T>(raw_window: &mut sysWindow) {
 			let window_data = unsafe {
 				window_get_user_data(raw_window)
 					.cast::<WindowData<T>>()
@@ -112,7 +112,7 @@ impl<'a, T: 'a> Window<T> {
 				.window_handlers
 				.disappear(window_data.user_data.as_mut().unwrap());
 		}
-		extern "C" fn raw_unload<T>(raw_window: NonNull<sysWindow>) {
+		extern "C" fn raw_unload<T>(raw_window: &mut sysWindow) {
 			let window_data = unsafe {
 				window_get_user_data(raw_window)
 					.cast::<WindowData<T>>()
@@ -148,7 +148,7 @@ impl<'a, T: 'a> Window<T> {
 	///
 	/// [`null_mut()`]: https://doc.rust-lang.org/stable/std/ptr/fn.null_mut.html
 	/// [`.leak()`]: #method.leak
-	pub unsafe fn from_raw(raw_window: NonNull<sysWindow>) -> Self {
+	pub unsafe fn from_raw(raw_window: &'static mut sysWindow) -> Self {
 		Self(raw_window, PhantomData)
 	}
 
@@ -156,16 +156,21 @@ impl<'a, T: 'a> Window<T> {
 		unsafe { window_is_loaded(self.0) }
 	}
 
-	pub fn show(&self, animated: bool) {
+	pub fn show(&mut self, animated: bool) {
 		window_stack::push(self, animated)
 	}
 
-	pub fn hide(&self, animated: bool) -> bool {
+	pub fn hide(&mut self, animated: bool) -> bool {
 		window_stack::remove(self, animated)
 	}
 
-	pub fn leak(self) -> NonNull<sysWindow> {
-		ManuallyDrop::new(self).0
+	pub fn leak(self) -> &'static mut sysWindow
+	where
+		T: 'static,
+	{
+		let raw = unsafe { (self.0 as *mut sysWindow).as_mut() }.unwrap();
+		forget(self);
+		raw
 	}
 }
 
@@ -174,7 +179,7 @@ impl<T> Drop for Window<T> {
 		unsafe {
 			//SAFETY: window_data is created and leaked in the only accessible constructor.
 			let window_data = window_get_user_data(self.0).cast();
-			window_destroy(self.0);
+			window_destroy((self.0 as *mut sysWindow).as_mut().unwrap());
 			Box::<WindowData<T>>::from_raw(NonNull::new_unchecked(window_data));
 		}
 	}

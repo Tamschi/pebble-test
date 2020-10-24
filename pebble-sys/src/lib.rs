@@ -121,32 +121,34 @@ pub mod user_interface {
 			pub unload: Option<WindowHandler>,
 		}
 
-		pub type WindowHandler = extern "C" fn(window: NonNull<Window>);
+		pub type WindowHandler = extern "C" fn(window: &mut Window);
 
 		extern "C" {
 			pub type Window;
 
-			pub fn window_create() -> *mut Window;
-			pub fn window_destroy(window: NonNull<Window>);
+			pub fn window_create() -> Option<&'static mut Window>;
+			pub fn window_destroy(window: &'static mut Window);
 			pub fn window_set_click_config_provider(
-				window: NonNull<Window>,
+				window: &mut Window,
 				click_config_provider: Option<ClickConfigProvider>,
 			);
 			pub fn window_set_click_config_provider_with_context(
-				window: NonNull<Window>,
+				window: &mut Window,
 				click_config_provider: Option<ClickConfigProvider>,
 				context: *mut c_void,
 			);
-			pub fn window_get_click_config_provider(
-				window: NonNull<Window>,
-			) -> Option<ClickConfigProvider>;
-			pub fn window_get_click_config_context(window: NonNull<Window>) -> *mut c_void;
-			pub fn window_set_window_handlers(window: NonNull<Window>, handlers: WindowHandlers);
-			pub fn window_get_root_layer(window: NonNull<Window>) -> NonNull<Layer>;
-			pub fn window_set_background_color(window: NonNull<Window>, background_color: GColor8);
-			pub fn window_is_loaded(window: NonNull<Window>) -> bool;
-			pub fn window_set_user_data(window: NonNull<Window>, data: *mut c_void);
-			pub fn window_get_user_data(window: NonNull<Window>) -> *mut c_void;
+			pub fn window_get_click_config_provider(window: &Window)
+				-> Option<ClickConfigProvider>;
+			pub fn window_get_click_config_context(window: &Window) -> *mut c_void;
+			pub fn window_set_window_handlers(window: &mut Window, handlers: WindowHandlers);
+
+			// The watch is single-threaded and everything's on the heap, so this *should* be fine.
+			pub fn window_get_root_layer(window: &Window) -> &mut Layer;
+
+			pub fn window_set_background_color(window: &mut Window, background_color: GColor8);
+			pub fn window_is_loaded(window: &Window) -> bool;
+			pub fn window_set_user_data(window: &mut Window, data: *mut c_void);
+			pub fn window_get_user_data(window: &Window) -> *mut c_void;
 			pub fn window_single_click_subscribe(button_id: ButtonId, handler: ClickHandler);
 			pub fn window_single_repeating_click_subscribe(
 				button_id: ButtonId,
@@ -179,15 +181,14 @@ pub mod user_interface {
 
 	pub mod window_stack {
 		use super::window::Window;
-		use core::ptr::NonNull;
 
 		extern "C" {
-			pub fn window_stack_push(window: NonNull<Window>, animated: bool);
+			pub fn window_stack_push(window: &mut Window, animated: bool);
 			pub fn window_stack_pop(animated: bool) -> *mut Window;
 			pub fn window_stack_pop_all(animated: bool);
-			pub fn window_stack_remove(window: *mut Window, animated: bool) -> bool;
+			pub fn window_stack_remove(window: &mut Window, animated: bool) -> bool;
 			pub fn window_stack_get_top_window() -> *mut Window;
-			pub fn window_stack_contains_window(window: NonNull<Window>) -> bool;
+			pub fn window_stack_contains_window(window: &mut Window) -> bool;
 		}
 	}
 }

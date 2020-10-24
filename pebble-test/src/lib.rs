@@ -16,7 +16,7 @@ struct WindowState;
 
 #[no_mangle]
 pub extern "C" fn main() {
-	let window = Window::new(WindowHandlers {
+	let mut window = Window::new(WindowHandlers {
 		// mutable closures
 		load: || WindowState,
 		appear: |_s| (),
