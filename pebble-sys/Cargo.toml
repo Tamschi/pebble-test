@@ -5,4 +5,14 @@ authors = ["Tamme Schichler <tamme@schichler.dev>"]
 edition = "2018"
 publish = false
 
+autotests = false
+autobenches = false
+autoexamples = false
+
+[lib]
+name = "pebble_sys"
+test = false
+doctest = false
+bench = false
+
 [dependencies]

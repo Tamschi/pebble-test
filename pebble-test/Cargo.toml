@@ -7,10 +7,14 @@ publish = false
 
 autotests = false
 autobenches = false
+autoexamples = false
 
 [lib]
 name = "pebble_test"
 crate-type = ["staticlib"]
+test = false
+doctest = false
+bench = false
 
 [dependencies]
 debugless-unwrap = "0.0.4"
