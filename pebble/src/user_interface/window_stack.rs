@@ -1,5 +1,5 @@
-use crate::window::Window;
-use pebble_sys::*;
+use super::window::Window;
+use pebble_sys::user_interface::window_stack::*;
 
 pub fn push<T>(window: &Window<T>, animated: bool) {
 	unsafe { window_stack_push(window.0, animated) }

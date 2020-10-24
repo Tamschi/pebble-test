@@ -1,11 +1,10 @@
 #![no_std]
 
 use core::panic::PanicInfo;
-
 use debugless_unwrap::DebuglessUnwrap as _;
 use pebble::{
-	app,
-	window::{Window, WindowHandlers},
+	foundation::app,
+	user_interface::window::{Window, WindowHandlers},
 };
 
 #[panic_handler]

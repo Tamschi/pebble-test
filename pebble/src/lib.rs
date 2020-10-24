@@ -16,9 +16,8 @@ use core::{
 
 use pebble_sys::standard_c::memory::{free, malloc};
 
-pub mod app;
-pub mod window;
-pub mod window_stack;
+pub mod foundation;
+pub mod user_interface;
 
 struct Box<T: ?Sized>(NonNull<T>);
 

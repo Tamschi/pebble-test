@@ -1,8 +1,11 @@
+use super::window_stack;
 use crate::Box;
 use core::{marker::PhantomData, mem::ManuallyDrop, ptr::NonNull};
-use pebble_sys::*;
+use pebble_sys::user_interface::window::{
+	Window as sysWindow, WindowHandlers as sysWindowHandlers, *,
+};
 
-pub struct Window<'a, T>(pub(crate) NonNull<pebble_sys::Window>, PhantomData<&'a T>);
+pub struct Window<'a, T>(pub(crate) NonNull<sysWindow>, PhantomData<&'a T>);
 
 pub struct WindowHandlers<L: FnMut() -> T, A: FnMut(&mut T), D: FnMut(&mut T), U: FnMut(T), T> {
 	pub load: L,
@@ -78,7 +81,7 @@ impl<'a, T: 'a> Window<'a, T> {
 			}
 		};
 
-		extern "C" fn raw_load<T>(raw_window: NonNull<pebble_sys::Window>) {
+		extern "C" fn raw_load<T>(raw_window: NonNull<sysWindow>) {
 			let window_data = unsafe {
 				window_get_user_data(raw_window)
 					.cast::<WindowData<T>>()
@@ -87,7 +90,7 @@ impl<'a, T: 'a> Window<'a, T> {
 			.unwrap();
 			window_data.user_data = Some(window_data.window_handlers.load());
 		}
-		extern "C" fn raw_appear<T>(raw_window: NonNull<pebble_sys::Window>) {
+		extern "C" fn raw_appear<T>(raw_window: NonNull<sysWindow>) {
 			let window_data = unsafe {
 				window_get_user_data(raw_window)
 					.cast::<WindowData<T>>()
@@ -98,7 +101,7 @@ impl<'a, T: 'a> Window<'a, T> {
 				.window_handlers
 				.appear(window_data.user_data.as_mut().unwrap());
 		}
-		extern "C" fn raw_disappear<T>(raw_window: NonNull<pebble_sys::Window>) {
+		extern "C" fn raw_disappear<T>(raw_window: NonNull<sysWindow>) {
 			let window_data = unsafe {
 				window_get_user_data(raw_window)
 					.cast::<WindowData<T>>()
@@ -109,7 +112,7 @@ impl<'a, T: 'a> Window<'a, T> {
 				.window_handlers
 				.disappear(window_data.user_data.as_mut().unwrap());
 		}
-		extern "C" fn raw_unload<T>(raw_window: NonNull<pebble_sys::Window>) {
+		extern "C" fn raw_unload<T>(raw_window: NonNull<sysWindow>) {
 			let window_data = unsafe {
 				window_get_user_data(raw_window)
 					.cast::<WindowData<T>>()
@@ -126,7 +129,7 @@ impl<'a, T: 'a> Window<'a, T> {
 			window_set_user_data(raw_window, Box::into_raw(window_data).as_ptr().cast());
 			window_set_window_handlers(
 				raw_window,
-				pebble_sys::WindowHandlers {
+				sysWindowHandlers {
 					load: raw_load::<T>,
 					appear: raw_appear::<T>,
 					disappear: raw_disappear::<T>,
@@ -145,7 +148,7 @@ impl<'a, T: 'a> Window<'a, T> {
 	///
 	/// [`null_mut()`]: https://doc.rust-lang.org/stable/std/ptr/fn.null_mut.html
 	/// [`.leak()`]: #method.leak
-	pub unsafe fn from_raw(raw_window: NonNull<pebble_sys::Window>) -> Self {
+	pub unsafe fn from_raw(raw_window: NonNull<sysWindow>) -> Self {
 		Self(raw_window, PhantomData)
 	}
 
@@ -154,14 +157,14 @@ impl<'a, T: 'a> Window<'a, T> {
 	}
 
 	pub fn show(&self, animated: bool) {
-		crate::window_stack::push(self, animated)
+		window_stack::push(self, animated)
 	}
 
 	pub fn hide(&self, animated: bool) -> bool {
-		crate::window_stack::remove(self, animated)
+		window_stack::remove(self, animated)
 	}
 
-	pub fn leak(self) -> NonNull<pebble_sys::Window> {
+	pub fn leak(self) -> NonNull<sysWindow> {
 		ManuallyDrop::new(self).0
 	}
 }
