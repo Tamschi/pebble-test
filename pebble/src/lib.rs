@@ -4,7 +4,6 @@
 #![feature(unsize)]
 
 use core::{
-	// any::Any,
 	future::Future,
 	intrinsics::drop_in_place,
 	marker::Unsize,
@@ -93,16 +92,6 @@ impl<T: ?Sized> DerefMut for Box<T> {
 		unsafe { self.0.as_mut() }
 	}
 }
-
-// impl Box<dyn Any> {
-// 	pub fn downcast<T: Any>(r#box: Self) -> Result<Box<T>, Box<dyn Any>> {
-// 		if r#box.is::<T>() {
-// 			unsafe { Ok(Box::cast(r#box)) }
-// 		} else {
-// 			Err(r#box)
-// 		}
-// 	}
-// }
 
 impl<T: ?Sized + Unsize<U>, U: ?Sized> CoerceUnsized<Box<U>> for Box<T> {}
 

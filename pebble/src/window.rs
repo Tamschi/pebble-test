@@ -55,8 +55,7 @@ impl<'a, T: 'a> Window<'a, T> {
 		let window_data = Box::new(WindowData {
 			user_data: None,
 			window_handlers: Box::new(window_handlers)
-				.map_err(|window_handlers| (window_handlers,))?
-				as Box<dyn WindowHandlersTrait<T>>,
+				.map_err(|window_handlers| (window_handlers,))?,
 		})
 		.map_err(|window_data| {
 			(Box::into_inner(unsafe {
