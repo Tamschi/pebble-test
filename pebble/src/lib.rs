@@ -7,7 +7,7 @@ use core::{
 	future::Future,
 	intrinsics::drop_in_place,
 	marker::Unsize,
-	mem::{forget, size_of, size_of_val_raw},
+	mem::{size_of, size_of_val_raw, ManuallyDrop},
 	ops::{CoerceUnsized, Deref, DerefMut},
 	pin::Pin,
 	ptr::NonNull,
@@ -61,9 +61,8 @@ impl<T: ?Sized> Box<T> {
 	where
 		T: 'a,
 	{
-		let pointer = r#box.0;
-		forget(r#box);
-		unsafe { &mut *pointer.as_ptr() }
+		let pointer = ManuallyDrop::new(r#box).0.as_ptr();
+		unsafe { &mut *pointer }
 	}
 
 	pub unsafe fn from_raw(raw: NonNull<T>) -> Self {

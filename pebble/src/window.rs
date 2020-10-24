@@ -1,5 +1,5 @@
 use crate::Box;
-use core::{marker::PhantomData, ptr::NonNull};
+use core::{marker::PhantomData, mem::ManuallyDrop, ptr::NonNull};
 use pebble_sys::*;
 
 pub struct Window<'a, T>(pub(crate) NonNull<pebble_sys::Window>, PhantomData<&'a T>);
@@ -43,6 +43,11 @@ struct WindowData<'a, T> {
 	window_handlers: Box<dyn 'a + WindowHandlersTrait<T>>,
 }
 
+pub struct WindowCreationError<L: FnMut() -> T, A: FnMut(&mut T), D: FnMut(&mut T), U: FnMut(T), T>
+{
+	pub window_handlers: WindowHandlers<L, A, D, U, T>,
+}
+
 impl<'a, T: 'a> Window<'a, T> {
 	pub fn new<
 		L: 'a + FnMut() -> T,
@@ -51,23 +56,25 @@ impl<'a, T: 'a> Window<'a, T> {
 		U: 'a + FnMut(T),
 	>(
 		window_handlers: WindowHandlers<L, A, D, U, T>,
-	) -> Result<Self, (WindowHandlers<L, A, D, U, T>,)> {
+	) -> Result<Self, WindowCreationError<L, A, D, U, T>> {
 		let window_data = Box::new(WindowData {
 			user_data: None,
 			window_handlers: Box::new(window_handlers)
-				.map_err(|window_handlers| (window_handlers,))?,
+				.map_err(|window_handlers| WindowCreationError { window_handlers })?,
 		})
-		.map_err(|window_data| {
-			(Box::into_inner(unsafe {
+		.map_err(|window_data| WindowCreationError::<_, _, _, _, T> {
+			window_handlers: Box::into_inner(unsafe {
 				Box::downcast_unchecked(window_data.window_handlers)
-			}),)
+			}),
 		})?;
 		let raw_window = match NonNull::new(unsafe { window_create() }) {
 			Some(raw_window) => raw_window,
 			None => {
-				return Err((Box::into_inner(unsafe {
-					Box::downcast_unchecked(Box::into_inner(window_data).window_handlers)
-				}),));
+				return Err(WindowCreationError {
+					window_handlers: Box::into_inner(unsafe {
+						Box::downcast_unchecked(Box::into_inner(window_data).window_handlers)
+					}),
+				});
 			}
 		};
 
@@ -130,8 +137,16 @@ impl<'a, T: 'a> Window<'a, T> {
 		Ok(Self(raw_window, PhantomData))
 	}
 
-	pub unsafe fn from_raw(raw_window: *mut pebble_sys::Window) -> Result<Self, ()> {
-		Ok(Self(NonNull::new(raw_window).ok_or(())?, PhantomData))
+	/// Assembles a new instance of `Window<T>` from the given raw window handle.
+	///
+	/// # Safety
+	///
+	/// This function is only safe if `raw_window` is a raw window handle that was previously [`.leak()`]ed from the same `Window<T>` variant and no other `Window<T>` instance has been created from it since.
+	///
+	/// [`null_mut()`]: https://doc.rust-lang.org/stable/std/ptr/fn.null_mut.html
+	/// [`.leak()`]: #method.leak
+	pub unsafe fn from_raw(raw_window: NonNull<pebble_sys::Window>) -> Self {
+		Self(raw_window, PhantomData)
 	}
 
 	pub fn is_loaded(&self) -> bool {
@@ -144,6 +159,10 @@ impl<'a, T: 'a> Window<'a, T> {
 
 	pub fn hide(&self, animated: bool) -> bool {
 		crate::window_stack::remove(self, animated)
+	}
+
+	pub fn leak(self) -> NonNull<pebble_sys::Window> {
+		ManuallyDrop::new(self).0
 	}
 }
 
