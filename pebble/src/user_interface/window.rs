@@ -130,10 +130,10 @@ impl<'a, T: 'a> Window<'a, T> {
 			window_set_window_handlers(
 				raw_window,
 				sysWindowHandlers {
-					load: raw_load::<T>,
-					appear: raw_appear::<T>,
-					disappear: raw_disappear::<T>,
-					unload: raw_unload::<T>,
+					load: Some(raw_load::<T>),
+					appear: Some(raw_appear::<T>),
+					disappear: Some(raw_disappear::<T>),
+					unload: Some(raw_unload::<T>),
 				},
 			)
 		}
