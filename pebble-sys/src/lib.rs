@@ -1,9 +1,7 @@
 #![no_std]
+#![feature(extern_types)]
 
 use core::{ffi::c_void, ptr::NonNull};
-
-// Opaque handles.
-pub enum Window {}
 
 #[repr(u8)]
 pub enum GColor8 {
@@ -24,6 +22,8 @@ pub struct WindowHandlers {
 }
 
 extern "C" {
+	pub type Window;
+
 	pub fn app_event_loop();
 
 	pub fn window_create() -> *mut Window;
