@@ -5,7 +5,7 @@ use pebble_sys::user_interface::window::{
 	Window as sysWindow, WindowHandlers as sysWindowHandlers, *,
 };
 
-pub struct Window<'a, T>(pub(crate) NonNull<sysWindow>, PhantomData<&'a T>);
+pub struct Window<T>(pub(crate) NonNull<sysWindow>, PhantomData<T>);
 
 pub struct WindowHandlers<L: FnMut() -> T, A: FnMut(&mut T), D: FnMut(&mut T), U: FnMut(T), T> {
 	pub load: L,
@@ -51,7 +51,7 @@ pub struct WindowCreationError<L: FnMut() -> T, A: FnMut(&mut T), D: FnMut(&mut 
 	pub window_handlers: WindowHandlers<L, A, D, U, T>,
 }
 
-impl<'a, T: 'a> Window<'a, T> {
+impl<'a, T: 'a> Window<T> {
 	pub fn new<
 		L: 'a + FnMut() -> T,
 		A: 'a + FnMut(&mut T),
@@ -169,7 +169,7 @@ impl<'a, T: 'a> Window<'a, T> {
 	}
 }
 
-impl<'a, T> Drop for Window<'a, T> {
+impl<T> Drop for Window<T> {
 	fn drop(&mut self) {
 		unsafe {
 			//SAFETY: window_data is created and leaked in the only accessible constructor.
