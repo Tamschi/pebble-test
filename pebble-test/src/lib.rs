@@ -1,7 +1,6 @@
 #![no_std]
-#![feature(test)]
 
-use core::{hint::black_box, panic::PanicInfo, ptr::null_mut};
+use core::panic::PanicInfo;
 
 use debugless_unwrap::DebuglessUnwrap as _;
 use pebble::{
@@ -11,9 +10,7 @@ use pebble::{
 
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
-	// Segfault.
-	(unsafe { *black_box(null_mut::<extern "C" fn()>()) })();
-	unreachable!()
+	loop {}
 }
 
 struct WindowState;
