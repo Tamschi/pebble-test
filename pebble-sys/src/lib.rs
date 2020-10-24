@@ -42,4 +42,25 @@ extern "C" {
 	pub fn window_stack_remove(window: *mut Window, animated: bool) -> bool;
 	pub fn window_stack_get_top_window() -> *mut Window;
 	pub fn window_stack_contains_window(window: NonNull<Window>) -> bool;
+
+}
+
+pub mod standard_c {
+	pub mod memory {
+		use core::ffi::c_void;
+
+		#[allow(non_camel_case_types)]
+		type int = i32;
+
+		extern "C" {
+			pub fn malloc(size: usize) -> *mut c_void;
+			pub fn calloc(count: usize, size: usize) -> *mut c_void;
+			pub fn realloc(ptr: *mut c_void, size: usize) -> *mut c_void;
+			pub fn free(ptr: *mut c_void);
+			pub fn memcmp(ptr1: *const c_void, ptr2: *const c_void, n: usize) -> int;
+			pub fn memcpy(dest: *mut c_void, src: *const c_void, n: usize) -> *mut c_void;
+			pub fn memmove(dest: *mut c_void, src: *const c_void, n: usize) -> *mut c_void;
+			pub fn memset(dest: *mut c_void, c: int, n: usize) -> *mut c_void;
+		}
+	}
 }

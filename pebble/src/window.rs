@@ -1,3 +1,4 @@
+use crate::Box;
 use core::{marker::PhantomData, ptr::NonNull};
 use pebble_sys::*;
 
@@ -50,12 +51,26 @@ impl<'a, T: 'a> Window<'a, T> {
 		U: 'a + FnMut(T),
 	>(
 		window_handlers: WindowHandlers<L, A, D, U, T>,
-	) -> Result<Self, ()> {
-		let raw_window = NonNull::new(unsafe { window_create() }).ok_or(())?;
+	) -> Result<Self, (WindowHandlers<L, A, D, U, T>,)> {
 		let window_data = Box::new(WindowData {
 			user_data: None,
-			window_handlers: Box::new(window_handlers),
-		});
+			window_handlers: Box::new(window_handlers)
+				.map_err(|window_handlers| (window_handlers,))?
+				as Box<dyn WindowHandlersTrait<T>>,
+		})
+		.map_err(|window_data| {
+			(Box::into_inner(unsafe {
+				Box::cast(window_data.window_handlers)
+			}),)
+		})?;
+		let raw_window = match NonNull::new(unsafe { window_create() }) {
+			Some(raw_window) => raw_window,
+			None => {
+				return Err((Box::into_inner(unsafe {
+					Box::cast(Box::into_inner(window_data).window_handlers)
+				}),));
+			}
+		};
 
 		extern "C" fn raw_load<T>(raw_window: NonNull<pebble_sys::Window>) {
 			let window_data = unsafe {
@@ -102,10 +117,7 @@ impl<'a, T: 'a> Window<'a, T> {
 
 		unsafe {
 			//SAFETY: window_data is only retrieved and destroyed in the destructor, *after* destroying the window.
-			window_set_user_data(
-				raw_window,
-				(Box::leak(window_data) as *mut WindowData<T>).cast(),
-			);
+			window_set_user_data(raw_window, Box::into_raw(window_data).as_ptr().cast());
 			window_set_window_handlers(
 				raw_window,
 				pebble_sys::WindowHandlers {
@@ -140,9 +152,9 @@ impl<'a, T> Drop for Window<'a, T> {
 	fn drop(&mut self) {
 		unsafe {
 			//SAFETY: window_data is created and leaked in the only accessible constructor.
-			let window_data = window_get_user_data(self.0);
+			let window_data = window_get_user_data(self.0).cast();
 			window_destroy(self.0);
-			Box::<WindowData<T>>::from_raw(window_data.cast());
+			Box::<WindowData<T>>::from_raw(NonNull::new_unchecked(window_data));
 		}
 	}
 }
