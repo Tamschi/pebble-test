@@ -59,14 +59,14 @@ impl<'a, T: 'a> Window<'a, T> {
 		})
 		.map_err(|window_data| {
 			(Box::into_inner(unsafe {
-				Box::cast(window_data.window_handlers)
+				Box::downcast_unchecked(window_data.window_handlers)
 			}),)
 		})?;
 		let raw_window = match NonNull::new(unsafe { window_create() }) {
 			Some(raw_window) => raw_window,
 			None => {
 				return Err((Box::into_inner(unsafe {
-					Box::cast(Box::into_inner(window_data).window_handlers)
+					Box::downcast_unchecked(Box::into_inner(window_data).window_handlers)
 				}),));
 			}
 		};

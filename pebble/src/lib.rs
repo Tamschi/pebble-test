@@ -74,7 +74,7 @@ impl<T: ?Sized> Box<T> {
 		Box::leak(r#box).into()
 	}
 
-	pub unsafe fn cast<U>(r#box: Self) -> Box<U> {
+	pub unsafe fn downcast_unchecked<U: Unsize<T>>(r#box: Self) -> Box<U> {
 		Box::from_raw(Box::into_raw(r#box).cast())
 	}
 }
