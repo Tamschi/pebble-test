@@ -19,6 +19,9 @@ use pebble_sys::standard_c::memory::{free, malloc};
 pub mod foundation;
 pub mod user_interface;
 
+/// Just a standard Box, more or less. The main difference is that its constructor is fallible instead of panicking.
+///
+/// It probably has fewer features than Rust's version, but it should be possible to add or emulate those.
 struct Box<T: ?Sized>(NonNull<T>);
 
 impl<T> Box<T> {
@@ -100,5 +103,45 @@ impl<F: ?Sized + Future + Unpin> Future for Box<F> {
 
 	fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
 		F::poll(Pin::new(&mut *self), cx)
+	}
+}
+
+/// This is *sort of* like a Cell, but for constant handles. It should still allow surface-level aliasing.
+///
+/// Note that this is a reference wrapper and does not drop its target!
+///
+///TODO: Make sure this isn't Send.
+struct Handle<T: ?Sized>(*mut T);
+
+impl<T: ?Sized> Handle<T> {
+	pub fn new(exclusive_handle: &'static mut T) -> Self {
+		Self(exclusive_handle as *mut T)
+	}
+
+	pub fn unwrap(self) -> &'static mut T {
+		unsafe { &mut *self.0 }
+	}
+
+	#[allow(clippy::mut_from_ref)]
+	pub unsafe fn as_mut_unchecked(&self) -> &mut T {
+		&mut *self.0
+	}
+
+	pub unsafe fn duplicate(&self) -> Self {
+		Self(self.0)
+	}
+}
+
+impl<T: ?Sized> Deref for Handle<T> {
+	type Target = T;
+
+	fn deref(&self) -> &Self::Target {
+		unsafe { &*self.0 }
+	}
+}
+
+impl<T: ?Sized> DerefMut for Handle<T> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		unsafe { &mut *self.0 }
 	}
 }

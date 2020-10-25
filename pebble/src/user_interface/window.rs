@@ -1,11 +1,11 @@
 use super::window_stack;
-use crate::Box;
-use core::{marker::PhantomData, mem::forget, ptr::NonNull};
+use crate::{Box, Handle};
+use core::{marker::PhantomData, mem::ManuallyDrop, ptr::NonNull};
 use pebble_sys::user_interface::window::{
 	Window as sysWindow, WindowHandlers as sysWindowHandlers, *,
 };
 
-pub struct Window<T>(pub(crate) &'static mut sysWindow, PhantomData<T>);
+pub struct Window<T>(pub(crate) Handle<sysWindow>, PhantomData<T>);
 
 pub struct WindowHandlers<L: FnMut() -> T, A: FnMut(&mut T), D: FnMut(&mut T), U: FnMut(T), T> {
 	pub load: L,
@@ -137,7 +137,7 @@ impl<'a, T: 'a> Window<T> {
 				},
 			)
 		}
-		Ok(Self(raw_window, PhantomData))
+		Ok(Self(Handle::new(raw_window), PhantomData))
 	}
 
 	/// Assembles a new instance of `Window<T>` from the given raw window handle.
@@ -149,18 +149,18 @@ impl<'a, T: 'a> Window<T> {
 	/// [`null_mut()`]: https://doc.rust-lang.org/stable/std/ptr/fn.null_mut.html
 	/// [`.leak()`]: #method.leak
 	pub unsafe fn from_raw(raw_window: &'static mut sysWindow) -> Self {
-		Self(raw_window, PhantomData)
+		Self(Handle::new(raw_window), PhantomData)
 	}
 
 	pub fn is_loaded(&self) -> bool {
-		unsafe { window_is_loaded(self.0) }
+		unsafe { window_is_loaded(&*self.0) }
 	}
 
-	pub fn show(&mut self, animated: bool) {
+	pub fn show(&self, animated: bool) {
 		window_stack::push(self, animated)
 	}
 
-	pub fn hide(&mut self, animated: bool) -> bool {
+	pub fn hide(&self, animated: bool) -> bool {
 		window_stack::remove(self, animated)
 	}
 
@@ -168,9 +168,7 @@ impl<'a, T: 'a> Window<T> {
 	where
 		T: 'static,
 	{
-		let raw = unsafe { (self.0 as *mut sysWindow).as_mut() }.unwrap();
-		forget(self);
-		raw
+		unsafe { ManuallyDrop::new(self).0.duplicate().unwrap() }
 	}
 }
 
@@ -178,8 +176,9 @@ impl<T> Drop for Window<T> {
 	fn drop(&mut self) {
 		unsafe {
 			//SAFETY: window_data is created and leaked in the only accessible constructor.
-			let window_data = window_get_user_data(self.0).cast();
-			window_destroy((self.0 as *mut sysWindow).as_mut().unwrap());
+			//SAFETY: self.0 isn't accessed after this.
+			let window_data = window_get_user_data(&*self.0).cast();
+			window_destroy(self.0.duplicate().unwrap());
 			Box::<WindowData<T>>::from_raw(NonNull::new_unchecked(window_data));
 		}
 	}
