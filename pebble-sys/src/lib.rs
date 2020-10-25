@@ -369,7 +369,13 @@ pub mod standard_c {
 
 		impl<'a> CastUncheckedExt<'a> for &'a void {
 			unsafe fn cast_unchecked<T>(self) -> &'a T {
-				todo!()
+				&*(self as *const _ as *const T)
+			}
+		}
+
+		impl<'a> CastUncheckedMutExt<'a> for &'a mut void {
+			unsafe fn cast_unchecked_mut<T>(self) -> &'a mut T {
+				&mut *(self as *mut _ as *mut T)
 			}
 		}
 

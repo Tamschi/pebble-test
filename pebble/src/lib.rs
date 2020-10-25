@@ -11,18 +11,16 @@ use core::{
 	future::Future,
 	intrinsics::drop_in_place,
 	marker::Unsize,
-	mem::{size_of, size_of_val_raw, ManuallyDrop, MaybeUninit},
+	mem::{size_of_val_raw, ManuallyDrop},
 	ops::{CoerceUnsized, Deref, DerefMut},
 	pin::Pin,
-	ptr::NonNull,
 	task::{Context, Poll},
 };
-use pebble_sys::{
-	prelude::*,
-	standard_c::memory::{free, malloc},
-};
+use pebble_sys::standard_c::memory::free;
+use standard_c::memory::malloc;
 
 pub mod foundation;
+pub mod standard_c;
 pub mod user_interface;
 
 /// Just a standard Box, more or less. The main difference is that its constructor is fallible instead of panicking.
@@ -32,16 +30,9 @@ struct Box<'a, T: ?Sized>(&'a mut T);
 
 impl<'a, T> Box<'a, T> {
 	pub fn new(value: T) -> Result<Self, T> {
-		// No aligned_alloc 🙁
-		match size_of::<T>() {
-			0 => Ok(Self(unsafe {
-				&mut *(NonNull::dangling().as_mut() as *mut T)
-			})),
-			// TODO: Wrap standard C API in something typesafe.
-			size => match unsafe { malloc(size).cast_unchecked_mut::<MaybeUninit<T>>() } {
-				Some(uninit) => Ok(Self(uninit.write(value))),
-				None => Err(value),
-			},
+		match malloc::<T>() {
+			Ok(uninit) => Ok(Self(uninit.write(value))),
+			Err(()) => Err(value),
 		}
 	}
 
