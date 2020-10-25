@@ -387,6 +387,7 @@ pub mod standard_c {
 
 		impl<'a, T> UpcastMutExt<'a> for Option<&'a mut T> {
 			type Output = Option<&'a mut void>;
+
 			fn upcast_mut(self) -> Self::Output {
 				self.map(|t_ref| t_ref.into())
 			}
