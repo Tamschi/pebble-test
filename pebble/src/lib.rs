@@ -4,7 +4,8 @@
 #![feature(maybe_uninit_extra)]
 #![feature(maybe_uninit_ref)]
 #![feature(unsize)]
-// #![warn(clippy::pedantic)]
+#![warn(clippy::pedantic)]
+#![allow(clippy::module_name_repetitions)] // Matching the SDK documentation.
 
 use core::{
 	future::Future,

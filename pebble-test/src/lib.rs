@@ -1,4 +1,5 @@
 #![no_std]
+#![warn(clippy::pedantic)]
 
 use core::panic::PanicInfo;
 use debugless_unwrap::DebuglessUnwrap as _;

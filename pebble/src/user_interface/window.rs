@@ -1,9 +1,10 @@
 use super::window_stack;
 use crate::{Box, Handle};
 use core::{marker::PhantomData, mem::ManuallyDrop};
-use pebble_sys::{
-	standard_c::memory::void,
-	user_interface::window::{Window as sysWindow, WindowHandlers as sysWindowHandlers, *},
+use pebble_sys::standard_c::memory::void;
+#[allow(clippy::wildcard_imports)]
+use pebble_sys::user_interface::window::{
+	Window as sysWindow, WindowHandlers as sysWindowHandlers, *,
 };
 
 pub struct Window<T>(pub(crate) Handle<sysWindow>, PhantomData<T>);
@@ -53,6 +54,9 @@ pub struct WindowCreationError<L: FnMut() -> T, A: FnMut(&mut T), D: FnMut(&mut 
 }
 
 impl<'a, T: 'a> Window<T> {
+	/// # Errors
+	///
+	/// This function errors if associated data can't be allocated on the heap or if the window can't be created for another reason.
 	pub fn new<
 		L: 'a + FnMut() -> T,
 		A: 'a + FnMut(&mut T),
@@ -61,6 +65,8 @@ impl<'a, T: 'a> Window<T> {
 	>(
 		window_handlers: WindowHandlers<L, A, D, U, T>,
 	) -> Result<Self, WindowCreationError<L, A, D, U, T>> {
+		#![allow(clippy::items_after_statements)]
+
 		let window_data = Box::new(WindowData {
 			user_data: None,
 			window_handlers: Box::new(window_handlers)
@@ -156,6 +162,7 @@ impl<'a, T: 'a> Window<T> {
 		Self(Handle::new(raw_window), PhantomData)
 	}
 
+	#[must_use]
 	pub fn is_loaded(&self) -> bool {
 		unsafe { window_is_loaded(&*self.0) }
 	}
@@ -164,10 +171,12 @@ impl<'a, T: 'a> Window<T> {
 		window_stack::push(self, animated)
 	}
 
+	#[allow(clippy::must_use_candidate)] // side effects
 	pub fn hide(&self, animated: bool) -> bool {
 		window_stack::remove(self, animated)
 	}
 
+	#[must_use = "Not reassembling the `Window<T>` later causes a memory leak."]
 	pub fn leak(self) -> &'static mut sysWindow
 	where
 		T: 'static,

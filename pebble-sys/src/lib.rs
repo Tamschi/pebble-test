@@ -1,5 +1,7 @@
 #![no_std]
 #![feature(extern_types)]
+#![warn(clippy::pedantic)]
+#![allow(clippy::module_name_repetitions)] // Matching the SDK documentation.
 
 pub mod prelude {
 	pub use super::standard_c::prelude::*;
