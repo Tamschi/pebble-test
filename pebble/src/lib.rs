@@ -3,6 +3,7 @@
 #![feature(layout_for_ptr)]
 #![feature(maybe_uninit_extra)]
 #![feature(maybe_uninit_ref)]
+#![feature(min_specialization)]
 #![feature(unsize)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)] // Matching the SDK documentation.
@@ -22,6 +23,10 @@ use standard_c::memory::malloc;
 pub mod foundation;
 pub mod standard_c;
 pub mod user_interface;
+
+trait SpecialDrop {
+	fn special_drop(&mut self);
+}
 
 /// Just a standard Box, more or less. The main difference is that its constructor is fallible instead of panicking.
 ///

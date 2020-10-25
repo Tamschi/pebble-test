@@ -1,5 +1,5 @@
 use super::window_stack;
-use crate::{Box, Handle};
+use crate::{Box, Handle, SpecialDrop};
 use core::{marker::PhantomData, mem::ManuallyDrop};
 #[allow(clippy::wildcard_imports)]
 use pebble_sys::{
@@ -7,7 +7,7 @@ use pebble_sys::{
 	user_interface::window::{Window as sysWindow, WindowHandlers as sysWindowHandlers, *},
 };
 
-pub struct Window<T>(pub(crate) Handle<sysWindow>, PhantomData<T>);
+pub struct Window<T: ?Sized>(pub(crate) Handle<sysWindow>, PhantomData<T>);
 
 pub struct WindowHandlers<L: FnMut() -> T, A: FnMut(&mut T), D: FnMut(&mut T), U: FnMut(T), T> {
 	pub load: L,
@@ -53,7 +53,7 @@ pub struct WindowCreationError<L: FnMut() -> T, A: FnMut(&mut T), D: FnMut(&mut 
 	pub window_handlers: WindowHandlers<L, A, D, U, T>,
 }
 
-impl<'a, T: 'a> Window<T> {
+impl<T> Window<T> {
 	/// Creates a new [`Window<T>`] instance with the specified [window handlers].
 	///
 	/// [`Window<T>`]: #
@@ -63,13 +63,17 @@ impl<'a, T: 'a> Window<T> {
 	///
 	/// This function errors if associated data can't be allocated on the heap or if the window can't be created for another reason.
 	pub fn new<
+		'a,
 		L: 'a + FnMut() -> T,
 		A: 'a + FnMut(&mut T),
 		D: 'a + FnMut(&mut T),
 		U: 'a + FnMut(T),
 	>(
 		window_handlers: WindowHandlers<L, A, D, U, T>,
-	) -> Result<Self, WindowCreationError<L, A, D, U, T>> {
+	) -> Result<Self, WindowCreationError<L, A, D, U, T>>
+	where
+		T: 'a,
+	{
 		#![allow(clippy::items_after_statements)]
 
 		let window_data = Box::new(WindowData {
@@ -169,25 +173,6 @@ impl<'a, T: 'a> Window<T> {
 		Self(Handle::new(raw_window), PhantomData)
 	}
 
-	#[must_use]
-	pub fn is_loaded(&self) -> bool {
-		unsafe { window_is_loaded(&*self.0) }
-	}
-
-	/// Pushes this window onto the window navidation stack, as topmost window of the app.
-	///
-	/// # Arguments
-	///
-	/// `animated`: Whether to animate the push using a sliding animation.
-	pub fn show(&self, animated: bool) {
-		window_stack::push(self, animated)
-	}
-
-	#[allow(clippy::must_use_candidate)] // side effects
-	pub fn hide(&self, animated: bool) -> bool {
-		window_stack::remove(self, animated)
-	}
-
 	/// Leaks the current [`Window<T>`] instance into a raw Pebble window handle.
 	///
 	/// Note that [`Window<T>`] has associated heap instances beyond the raw window, so only destroying that would still leak memory.
@@ -202,8 +187,41 @@ impl<'a, T: 'a> Window<T> {
 	}
 }
 
-impl<T> Drop for Window<T> {
+impl<T: ?Sized> Window<T> {
+	#[allow(clippy::must_use_candidate)] // side effects
+	pub fn hide(&self, animated: bool) -> bool {
+		window_stack::remove(self, animated)
+	}
+
+	#[must_use]
+	pub fn is_loaded(&self) -> bool {
+		unsafe { window_is_loaded(&*self.0) }
+	}
+
+	/// Pushes this window onto the window navidation stack, as topmost window of the app.
+	///
+	/// # Arguments
+	///
+	/// `animated`: Whether to animate the push using a sliding animation.
+	pub fn show(&self, animated: bool) {
+		window_stack::push(self, animated)
+	}
+}
+
+impl<T: ?Sized> Drop for Window<T> {
 	fn drop(&mut self) {
+		self.special_drop()
+	}
+}
+
+impl<T: ?Sized> SpecialDrop for Window<T> {
+	default fn special_drop(&mut self) {
+		unreachable!()
+	}
+}
+
+impl<T: Sized> SpecialDrop for Window<T> {
+	fn special_drop(&mut self) {
 		unsafe {
 			//SAFETY: window_data is created and leaked in the only accessible constructor.
 			//SAFETY: self.0 isn't accessed after this.
