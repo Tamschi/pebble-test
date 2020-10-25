@@ -1,10 +1,10 @@
 use super::window_stack;
 use crate::{Box, Handle};
 use core::{marker::PhantomData, mem::ManuallyDrop};
-use pebble_sys::standard_c::memory::void;
 #[allow(clippy::wildcard_imports)]
-use pebble_sys::user_interface::window::{
-	Window as sysWindow, WindowHandlers as sysWindowHandlers, *,
+use pebble_sys::{
+	standard_c::memory::void,
+	user_interface::window::{Window as sysWindow, WindowHandlers as sysWindowHandlers, *},
 };
 
 pub struct Window<T>(pub(crate) Handle<sysWindow>, PhantomData<T>);
@@ -54,6 +54,11 @@ pub struct WindowCreationError<L: FnMut() -> T, A: FnMut(&mut T), D: FnMut(&mut 
 }
 
 impl<'a, T: 'a> Window<T> {
+	/// Creates a new [`Window<T>`] instance with the specified [window handlers].
+	///
+	/// [`Window<T>`]: #
+	/// [window handlers]: ./struct.WindowHandlers.html
+	///
 	/// # Errors
 	///
 	/// This function errors if associated data can't be allocated on the heap or if the window can't be created for another reason.
@@ -150,14 +155,16 @@ impl<'a, T: 'a> Window<T> {
 		Ok(Self(Handle::new(raw_window), PhantomData))
 	}
 
-	/// Assembles a new instance of `Window<T>` from the given raw window handle.
+	/// Assembles a new instance of [`Window<T>`] from the given raw window handle.
+	///
+	/// [`Window<T>`]: #
 	///
 	/// # Safety
 	///
-	/// This function is only safe if `raw_window` is a raw window handle that was previously [`.leak()`]ed from the same `Window<T>` variant and no other `Window<T>` instance has been created from it since.
+	/// This function is only safe if `raw_window` is a raw window handle that was previously [`.leak()`]ed from the same [`Window<T>`] variant and no other [`Window<T>`] instance has been created from it since.
 	///
-	/// [`null_mut()`]: https://doc.rust-lang.org/stable/std/ptr/fn.null_mut.html
 	/// [`.leak()`]: #method.leak
+	/// [`Window<T>`]: #
 	pub unsafe fn from_raw(raw_window: &'static mut sysWindow) -> Self {
 		Self(Handle::new(raw_window), PhantomData)
 	}
@@ -167,6 +174,11 @@ impl<'a, T: 'a> Window<T> {
 		unsafe { window_is_loaded(&*self.0) }
 	}
 
+	/// Pushes this window onto the window navidation stack, as topmost window of the app.
+	///
+	/// # Arguments
+	///
+	/// `animated`: Whether to animate the push using a sliding animation.
 	pub fn show(&self, animated: bool) {
 		window_stack::push(self, animated)
 	}
@@ -176,6 +188,11 @@ impl<'a, T: 'a> Window<T> {
 		window_stack::remove(self, animated)
 	}
 
+	/// Leaks the current [`Window<T>`] instance into a raw Pebble window handle.
+	///
+	/// Note that [`Window<T>`] has associated heap instances beyond the raw window, so only destroying that would still leak memory.
+	///
+	/// [`Window<T>`]: #
 	#[must_use = "Not reassembling the `Window<T>` later causes a memory leak."]
 	pub fn leak(self) -> &'static mut sysWindow
 	where

@@ -37,7 +37,8 @@ impl<'a, T> Box<'a, T> {
 			0 => Ok(Self(unsafe {
 				&mut *(NonNull::dangling().as_mut() as *mut T)
 			})),
-			size => match unsafe { malloc(size).cast_unchecked::<MaybeUninit<T>>() } {
+			// TODO: Wrap standard C API in something typesafe.
+			size => match unsafe { malloc(size).cast_unchecked_mut::<MaybeUninit<T>>() } {
 				Some(uninit) => Ok(Self(uninit.write(value))),
 				None => Err(value),
 			},

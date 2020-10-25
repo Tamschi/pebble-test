@@ -186,6 +186,82 @@ pub mod user_interface {
 			);
 			pub fn window_set_click_context(button_id: ButtonId, context: *mut void);
 		}
+
+		pub mod number_window {
+			//! A ready-made window prompting the user to pick a number.
+			//!
+			//! ![A red Pebble displaying "Set Year", "2013" and a "△ ✓ ▽" `ActionBarLayer`](https://developer.rebble.io/developer.pebble.com/assets/images/docs/c/aplite/number_window.png)
+
+			use super::Window;
+			use crate::standard_c::memory::{c_str, void};
+			use core::{
+				marker::PhantomData,
+				ops::{Deref, DerefMut},
+			};
+
+			/// [`NumberWindow`] callbacks.
+			///
+			/// [`NumberWindow`]: ./index.html
+			#[repr(C)]
+			pub struct NumberWindowCallbacks {
+				/// Called as the value is incremented.
+				pub incremented: Option<NumberWindowCallback>,
+				/// Called as the value is decremented.
+				pub decremented: Option<NumberWindowCallback>,
+				/// Called as the value is confirmed, i.e. as the SELECT button is clicked.
+				pub selected: Option<NumberWindowCallback>,
+			}
+
+			/// A [`NumberWindow`] callback.
+			///
+			/// [`NumberWindow`]: ./index.html
+			pub type NumberWindowCallback =
+				extern "C" fn(number_window: &mut NumberWindow, context: &mut void);
+
+			/// Limited-lifetime foreign type. See [module](./index.html) documentation.  
+			/// [`Deref`] and [`DerefMut`] towards [`Window`] (but destroying it as such might leak memory).
+			///
+			/// [`Deref`]: https://doc.rust-lang.org/stable/core/ops/trait.Deref.html
+			/// [`DerefMut`]: https://doc.rust-lang.org/stable/core/ops/trait.DerefMut.html
+			/// [`Window`]: ../foreigntype.Window.html
+			#[repr(transparent)]
+			pub struct NumberWindow<'a>(PhantomData<&'a ()>, NumberWindowExtern);
+
+			extern "C" {
+				type NumberWindowExtern;
+
+				pub fn number_window_create<'a>(
+					label: &'a c_str,
+					callbacks: NumberWindowCallbacks,
+					callback_context: *mut void,
+				) -> Option<&'static NumberWindow<'a>>;
+
+				pub fn number_window_destroy(number_window: &'static mut NumberWindow);
+				pub fn number_window_set_label<'a>(
+					number_window: &mut NumberWindow<'a>,
+					label: &'a c_str,
+				);
+				pub fn number_window_set_max(number_window: &mut NumberWindow, max: i32);
+				pub fn number_window_set_min(number_window: &mut NumberWindow, min: i32);
+				pub fn number_window_set_value(number_window: &mut NumberWindow, value: i32);
+				pub fn number_window_set_step_size(number_window: &mut NumberWindow, step: i32);
+				pub fn number_window_get_value(number_window: &NumberWindow) -> i32;
+			}
+
+			impl<'a> Deref for NumberWindow<'a> {
+				type Target = Window;
+
+				fn deref(&self) -> &Self::Target {
+					unsafe { &*(self as *const _ as *const Self::Target) }
+				}
+			}
+
+			impl<'a> DerefMut for NumberWindow<'a> {
+				fn deref_mut(&mut self) -> &mut Self::Target {
+					unsafe { &mut *(self as *mut _ as *mut Self::Target) }
+				}
+			}
+		}
 	}
 
 	pub mod window_stack {
@@ -208,15 +284,21 @@ pub mod standard_c {
 	}
 
 	pub mod memory {
+		#![allow(non_camel_case_types)]
+
 		pub mod prelude {
-			pub use super::{OptionToVoidExt, OptionVoidExt};
+			pub use super::{
+				CastUncheckedExt, CastUncheckedMutExt, OptionCastUncheckedMutExt, UpcastExt,
+				UpcastMutExt,
+			};
 		}
 
-		#[allow(non_camel_case_types)]
-		type int = i32;
+		pub type int = i32;
 
 		extern "C" {
-			/// `void` can be safely passed back across the FFI as `&void` while [`core::ffi::cvoid`] cannot.
+			pub type c_str;
+
+			/// `void` can be safely passed back across the FFI as `&void` while [`core::ffi::c_void`] cannot.
 			/// ([`c_void`] is NOT [unsized]!)
 			///
 			/// [`core::ffi::c_void`]: https://doc.rust-lang.org/stable/core/ffi/enum.c_void.html
@@ -246,28 +328,77 @@ pub mod standard_c {
 			}
 		}
 
-		pub trait OptionVoidExt<'a> {
+		pub trait CastUncheckedExt<'a> {
+			/// Casts a mutable untyped heap reference ([`&void]) into a typed one.
+			///
+			/// # Safety
+			///
+			/// Horribly unsafe if T doesn't point to an **initialised** instance of T.
+			unsafe fn cast_unchecked<T>(self) -> &'a T;
+		}
+
+		pub trait CastUncheckedMutExt<'a> {
 			/// Casts a mutable untyped heap reference ([`&mut void]) into a typed one.
 			///
 			/// # Safety
 			///
 			/// Horribly unsafe if T doesn't point to an **initialised** instance of T.
-			unsafe fn cast_unchecked<T>(self) -> Option<&'a mut T>;
+			unsafe fn cast_unchecked_mut<T>(self) -> &'a mut T;
 		}
 
-		pub trait OptionToVoidExt<'a> {
-			fn upcast(self) -> Option<&'a mut void>;
+		pub trait OptionCastUncheckedMutExt<'a> {
+			/// Casts a mutable untyped heap reference ([`&mut void]) into a typed one.
+			///
+			/// # Safety
+			///
+			/// Horribly unsafe if T doesn't point to an **initialised** instance of T.
+			unsafe fn cast_unchecked_mut<T>(self) -> Option<&'a mut T>;
 		}
 
-		impl<'a> OptionVoidExt<'a> for Option<&'a mut void> {
-			unsafe fn cast_unchecked<T>(self) -> Option<&'a mut T> {
-				self.map(|void_ref| &mut *(void_ref as *mut void).cast())
+		pub trait UpcastExt<'a> {
+			type Output;
+
+			fn upcast(self) -> Self::Output;
+		}
+
+		pub trait UpcastMutExt<'a> {
+			type Output;
+
+			fn upcast_mut(self) -> Self::Output;
+		}
+
+		impl<'a> CastUncheckedExt<'a> for &'a void {
+			unsafe fn cast_unchecked<T>(self) -> &'a T {
+				todo!()
 			}
 		}
 
-		impl<'a, T> OptionToVoidExt<'a> for Option<&'a mut T> {
-			fn upcast(self) -> Option<&'a mut void> {
+		impl<'a> OptionCastUncheckedMutExt<'a> for Option<&'a mut void> {
+			unsafe fn cast_unchecked_mut<T>(self) -> Option<&'a mut T> {
+				self.map(|void_ref| &mut *(void_ref as *mut _ as *mut T))
+			}
+		}
+
+		impl<'a, T> UpcastMutExt<'a> for Option<&'a mut T> {
+			type Output = Option<&'a mut void>;
+			fn upcast_mut(self) -> Self::Output {
 				self.map(|t_ref| t_ref.into())
+			}
+		}
+
+		impl<'a, T> UpcastExt<'a> for &'a T {
+			type Output = &'a void;
+
+			fn upcast(self) -> Self::Output {
+				self.into()
+			}
+		}
+
+		impl<'a, T> UpcastMutExt<'a> for &'a mut T {
+			type Output = &'a mut void;
+
+			fn upcast_mut(self) -> Self::Output {
+				self.into()
 			}
 		}
 	}
