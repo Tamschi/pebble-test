@@ -1,8 +1,9 @@
 use super::window_stack;
 use crate::{Box, Handle};
-use core::{marker::PhantomData, mem::ManuallyDrop, ptr::NonNull};
-use pebble_sys::user_interface::window::{
-	Window as sysWindow, WindowHandlers as sysWindowHandlers, *,
+use core::{marker::PhantomData, mem::ManuallyDrop};
+use pebble_sys::{
+	standard_c::memory::void,
+	user_interface::window::{Window as sysWindow, WindowHandlers as sysWindowHandlers, *},
 };
 
 pub struct Window<T>(pub(crate) Handle<sysWindow>, PhantomData<T>);
@@ -43,7 +44,7 @@ impl<L: FnMut() -> T, A: FnMut(&mut T), D: FnMut(&mut T), U: FnMut(T), T> Window
 
 struct WindowData<'a, T> {
 	user_data: Option<T>,
-	window_handlers: Box<dyn 'a + WindowHandlersTrait<T>>,
+	window_handlers: Box<'a, dyn 'a + WindowHandlersTrait<T>>,
 }
 
 pub struct WindowCreationError<L: FnMut() -> T, A: FnMut(&mut T), D: FnMut(&mut T), U: FnMut(T), T>
@@ -126,7 +127,10 @@ impl<'a, T: 'a> Window<T> {
 
 		unsafe {
 			//SAFETY: window_data is only retrieved and destroyed in the destructor, *after* destroying the window.
-			window_set_user_data(raw_window, Box::into_raw(window_data).as_ptr().cast());
+			window_set_user_data(raw_window, {
+				let mem: &mut void = Box::leak(window_data).into();
+				mem
+			});
 			window_set_window_handlers(
 				raw_window,
 				sysWindowHandlers {
@@ -179,7 +183,7 @@ impl<T> Drop for Window<T> {
 			//SAFETY: self.0 isn't accessed after this.
 			let window_data = window_get_user_data(&*self.0).cast();
 			window_destroy(self.0.duplicate().unwrap());
-			Box::<WindowData<T>>::from_raw(NonNull::new_unchecked(window_data));
+			Box::<WindowData<T>>::from_raw(&mut *window_data);
 		}
 	}
 }

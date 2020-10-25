@@ -1,6 +1,10 @@
 #![no_std]
 #![feature(extern_types)]
 
+pub mod prelude {
+	pub use super::standard_c::prelude::*;
+}
+
 pub mod foundation {
 	pub mod app {
 		extern "C" {
@@ -46,7 +50,7 @@ pub mod graphics {
 
 pub mod user_interface {
 	pub mod clicks {
-		use core::ffi::c_void;
+		use crate::standard_c::memory::void;
 
 		#[repr(C)] //TODO
 		pub enum ButtonId {
@@ -54,15 +58,18 @@ pub mod user_interface {
 		}
 
 		#[repr(transparent)]
-		pub struct ClickRecognizerRef(*mut c_void);
-		pub type ClickHandler = extern "C" fn(recognizer: ClickRecognizerRef, context: *mut c_void);
-		pub type ClickConfigProvider = extern "C" fn(context: *mut c_void);
+		pub struct ClickRecognizerRef(*mut void);
+		pub type ClickHandler = extern "C" fn(recognizer: ClickRecognizerRef, context: *mut void);
+		pub type ClickConfigProvider = extern "C" fn(context: *mut void);
 	}
 
 	pub mod layers {
 		use super::window::Window;
-		use crate::graphics::graphics_types::{GContext, GPoint, GRect};
-		use core::{ffi::c_void, ptr::NonNull};
+		use crate::{
+			graphics::graphics_types::{GContext, GPoint, GRect},
+			standard_c::memory::void,
+		};
+		use core::ptr::NonNull;
 
 		pub type LayerUpdateProc = extern "C" fn(layer: NonNull<Layer>, NonNull<GContext>);
 
@@ -99,7 +106,7 @@ pub mod user_interface {
 			pub fn layer_get_hidden(layer: NonNull<Layer>) -> bool;
 			pub fn layer_set_clips(layer: NonNull<Layer>, clips: bool);
 			pub fn layer_get_clips(layer: NonNull<Layer>) -> bool;
-			pub fn layer_get_data(layer: NonNull<Layer>) -> NonNull<c_void>;
+			pub fn layer_get_data(layer: NonNull<Layer>) -> NonNull<void>;
 
 		//TODO: #define GRect layer_get_unobstructed_bounds(const Layer* layer);
 		}
@@ -110,8 +117,8 @@ pub mod user_interface {
 			clicks::{ButtonId, ClickConfigProvider, ClickHandler},
 			layers::Layer,
 		};
-		use crate::graphics::graphics_types::GColor8;
-		use core::{ffi::c_void, ptr::NonNull};
+		use crate::{graphics::graphics_types::GColor8, standard_c::memory::void};
+		use core::ptr::NonNull;
 
 		#[repr(C)]
 		pub struct WindowHandlers {
@@ -135,11 +142,11 @@ pub mod user_interface {
 			pub fn window_set_click_config_provider_with_context(
 				window: &mut Window,
 				click_config_provider: Option<ClickConfigProvider>,
-				context: *mut c_void,
+				context: *mut void,
 			);
 			pub fn window_get_click_config_provider(window: &Window)
 				-> Option<ClickConfigProvider>;
-			pub fn window_get_click_config_context(window: &Window) -> *mut c_void;
+			pub fn window_get_click_config_context(window: &Window) -> *mut void;
 			pub fn window_set_window_handlers(window: &mut Window, handlers: WindowHandlers);
 
 			// The watch is single-threaded and everything's on the heap, so this *should* be fine.
@@ -147,8 +154,8 @@ pub mod user_interface {
 
 			pub fn window_set_background_color(window: &mut Window, background_color: GColor8);
 			pub fn window_is_loaded(window: &Window) -> bool;
-			pub fn window_set_user_data(window: &mut Window, data: *mut c_void);
-			pub fn window_get_user_data(window: &Window) -> *mut c_void;
+			pub fn window_set_user_data(window: &mut Window, data: *mut void);
+			pub fn window_get_user_data(window: &Window) -> *mut void;
 			pub fn window_single_click_subscribe(button_id: ButtonId, handler: ClickHandler);
 			pub fn window_single_repeating_click_subscribe(
 				button_id: ButtonId,
@@ -173,9 +180,9 @@ pub mod user_interface {
 				button_id: ButtonId,
 				down_handler: ClickHandler,
 				up_handler: ClickHandler,
-				context: Option<NonNull<c_void>>,
+				context: Option<NonNull<void>>,
 			);
-			pub fn window_set_click_context(button_id: ButtonId, context: *mut c_void);
+			pub fn window_set_click_context(button_id: ButtonId, context: *mut void);
 		}
 	}
 
@@ -194,21 +201,72 @@ pub mod user_interface {
 }
 
 pub mod standard_c {
+	pub mod prelude {
+		pub use super::memory::prelude::*;
+	}
+
 	pub mod memory {
-		use core::ffi::c_void;
+		pub mod prelude {
+			pub use super::{OptionToVoidExt, OptionVoidExt};
+		}
 
 		#[allow(non_camel_case_types)]
 		type int = i32;
 
 		extern "C" {
-			pub fn malloc(size: usize) -> *mut c_void;
-			pub fn calloc(count: usize, size: usize) -> *mut c_void;
-			pub fn realloc(ptr: *mut c_void, size: usize) -> *mut c_void;
-			pub fn free(ptr: *mut c_void);
-			pub fn memcmp(ptr1: *const c_void, ptr2: *const c_void, n: usize) -> int;
-			pub fn memcpy(dest: *mut c_void, src: *const c_void, n: usize) -> *mut c_void;
-			pub fn memmove(dest: *mut c_void, src: *const c_void, n: usize) -> *mut c_void;
-			pub fn memset(dest: *mut c_void, c: int, n: usize) -> *mut c_void;
+			/// `void` can be safely passed back across the FFI as `&void` while [`core::ffi::cvoid`] cannot.
+			/// ([`c_void`] is NOT [unsized]!)
+			///
+			/// [`core::ffi::c_void`]: https://doc.rust-lang.org/stable/core/ffi/enum.c_void.html
+			/// [`c_void`]: https://doc.rust-lang.org/stable/core/ffi/enum.c_void.html
+			/// [unsized]: https://doc.rust-lang.org/stable/core/marker/trait.Sized.html
+			pub type void;
+
+			pub fn malloc(size: usize) -> Option<&'static mut void>;
+			pub fn calloc(count: usize, size: usize) -> Option<&'static mut void>;
+			pub fn realloc(ptr: *mut void, size: usize) -> Option<&'static mut void>;
+			pub fn free(ptr: &'static mut void);
+			pub fn memcmp(ptr1: &void, ptr2: &void, n: usize) -> int;
+			pub fn memcpy(dest: &mut void, src: &void, n: usize) -> *mut void;
+			pub fn memmove(dest: *mut void, src: *const void, n: usize) -> *mut void;
+			pub fn memset(dest: &mut void, c: int, n: usize) -> *mut void;
+		}
+
+		impl<'a, T> From<&'a mut T> for &'a mut void {
+			fn from(src: &'a mut T) -> Self {
+				unsafe { &mut *(src as *mut _ as *mut void) }
+			}
+		}
+
+		impl<'a, T> From<&'a T> for &'a void {
+			fn from(src: &'a T) -> Self {
+				unsafe { &*(src as *const _ as *const void) }
+			}
+		}
+
+		pub trait OptionVoidExt<'a> {
+			/// Casts a mutable untyped heap reference ([`&mut void]) into a typed one.
+			///
+			/// # Safety
+			///
+			/// Horribly unsafe if T doesn't point to an **initialised** instance of T.
+			unsafe fn cast_unchecked<T>(self) -> Option<&'a mut T>;
+		}
+
+		pub trait OptionToVoidExt<'a> {
+			fn upcast(self) -> Option<&'a mut void>;
+		}
+
+		impl<'a> OptionVoidExt<'a> for Option<&'a mut void> {
+			unsafe fn cast_unchecked<T>(self) -> Option<&'a mut T> {
+				self.map(|void_ref| &mut *(void_ref as *mut void).cast())
+			}
+		}
+
+		impl<'a, T> OptionToVoidExt<'a> for Option<&'a mut T> {
+			fn upcast(self) -> Option<&'a mut void> {
+				self.map(|t_ref| t_ref.into())
+			}
 		}
 	}
 }
