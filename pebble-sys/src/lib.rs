@@ -1,10 +1,17 @@
 #![no_std]
 #![feature(extern_types)]
 #![warn(clippy::pedantic)]
-#![allow(clippy::module_name_repetitions)] // Matching the SDK documentation.
+#![allow(clippy::module_name_repetitions)]
+
+use core::panic::PanicInfo; // Matching the SDK documentation.
 
 pub mod prelude {
 	pub use super::standard_c::prelude::*;
+}
+
+#[panic_handler]
+fn panic(_info: &PanicInfo) -> ! {
+	loop {}
 }
 
 pub mod foundation {
@@ -216,7 +223,7 @@ pub mod user_interface {
 			///
 			/// [`NumberWindow`]: ./index.html
 			pub type NumberWindowCallback =
-				extern "C" fn(number_window: &mut NumberWindow, context: &mut void);
+				for<'a> extern "C" fn(number_window: &'a mut NumberWindow<'a>, context: &mut void);
 
 			/// Limited-lifetime foreign type. See [module](./index.html) documentation.  
 			/// [`Deref`] and [`DerefMut`] towards [`Window`] (but destroying it as such might leak memory).
@@ -233,8 +240,8 @@ pub mod user_interface {
 				pub fn number_window_create<'a>(
 					label: &'a c_str,
 					callbacks: NumberWindowCallbacks,
-					callback_context: *mut void,
-				) -> Option<&'static NumberWindow<'a>>;
+					callback_context: &'static mut void,
+				) -> Option<&'a mut NumberWindow<'a>>;
 
 				pub fn number_window_destroy(number_window: &'static mut NumberWindow);
 				pub fn number_window_set_label<'a>(
@@ -246,6 +253,14 @@ pub mod user_interface {
 				pub fn number_window_set_value(number_window: &mut NumberWindow, value: i32);
 				pub fn number_window_set_step_size(number_window: &mut NumberWindow, step: i32);
 				pub fn number_window_get_value(number_window: &NumberWindow) -> i32;
+				pub fn number_window_get_window<'a>(
+					number_window: &'a NumberWindow<'a>,
+				) -> &'a Window;
+				#[allow(clashing_extern_declarations)]
+				#[link_name = "number_window_get_window"]
+				pub fn number_window_get_window_mut<'a>(
+					number_window: &'a mut NumberWindow<'a>,
+				) -> &'a mut Window;
 			}
 
 			impl<'a> Deref for NumberWindow<'a> {

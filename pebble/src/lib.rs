@@ -11,7 +11,7 @@
 use core::{
 	future::Future,
 	intrinsics::drop_in_place,
-	marker::Unsize,
+	marker::{PhantomData, Unsize},
 	mem::{size_of_val_raw, ManuallyDrop},
 	ops::{CoerceUnsized, Deref, DerefMut},
 	pin::Pin,
@@ -112,16 +112,14 @@ impl<'a, F: ?Sized + Future + Unpin> Future for Box<'a, F> {
 /// This is *sort of* like a Cell, but for constant handles. It should still allow surface-level aliasing.
 ///
 /// Note that this is a reference wrapper and does not drop its target!
-///
-///TODO: Make sure this isn't Send.
-struct Handle<T: ?Sized>(*mut T);
+struct Handle<'a, T: 'a + ?Sized>(*mut T, PhantomData<&'a mut T>);
 
-impl<T: ?Sized> Handle<T> {
-	pub fn new(exclusive_handle: &'static mut T) -> Self {
-		Self(exclusive_handle as *mut T)
+impl<'a, T: 'a + ?Sized> Handle<'a, T> {
+	pub fn new(exclusive_handle: &'a mut T) -> Self {
+		Self(exclusive_handle as *mut T, PhantomData)
 	}
 
-	pub fn unwrap(self) -> &'static mut T {
+	pub fn unwrap(self) -> &'a mut T {
 		unsafe { &mut *self.0 }
 	}
 
@@ -131,11 +129,11 @@ impl<T: ?Sized> Handle<T> {
 	}
 
 	pub unsafe fn duplicate(&self) -> Self {
-		Self(self.0)
+		Self(self.0, self.1)
 	}
 }
 
-impl<T: ?Sized> Deref for Handle<T> {
+impl<'a, T: ?Sized> Deref for Handle<'a, T> {
 	type Target = T;
 
 	fn deref(&self) -> &Self::Target {
@@ -143,7 +141,7 @@ impl<T: ?Sized> Deref for Handle<T> {
 	}
 }
 
-impl<T: ?Sized> DerefMut for Handle<T> {
+impl<'a, T: ?Sized> DerefMut for Handle<'a, T> {
 	fn deref_mut(&mut self) -> &mut Self::Target {
 		unsafe { &mut *self.0 }
 	}

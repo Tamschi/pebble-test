@@ -1,13 +1,26 @@
 use super::window_stack;
 use crate::{Box, Handle, SpecialDrop};
-use core::{marker::PhantomData, mem::ManuallyDrop};
+use core::{
+	marker::PhantomData,
+	mem::{transmute_copy, ManuallyDrop},
+	ops::{Deref, DerefMut},
+};
 #[allow(clippy::wildcard_imports)]
 use pebble_sys::{
 	standard_c::memory::void,
 	user_interface::window::{Window as sysWindow, WindowHandlers as sysWindowHandlers, *},
 };
 
-pub struct Window<T: ?Sized>(pub(crate) Handle<sysWindow>, PhantomData<T>);
+pub mod number_window;
+
+#[repr(transparent)] // Needed for WindowRef and WindowRefMut to work.
+pub struct Window<T: ?Sized>(pub(crate) Handle<'static, sysWindow>, PhantomData<T>);
+
+#[repr(transparent)]
+pub struct WindowRef<'a>(Handle<'a, sysWindow>);
+
+#[repr(transparent)]
+pub struct WindowRefMut<'a>(Handle<'a, sysWindow>);
 
 pub struct WindowHandlers<L: FnMut() -> T, A: FnMut(&mut T), D: FnMut(&mut T), U: FnMut(T), T> {
 	pub load: L,
@@ -216,7 +229,7 @@ impl<T: ?Sized> Drop for Window<T> {
 
 impl<T: ?Sized> SpecialDrop for Window<T> {
 	default fn special_drop(&mut self) {
-		unreachable!()
+		panic!("Dropping unsized `Window<T>`s is illegal")
 	}
 }
 
@@ -229,5 +242,30 @@ impl<T: Sized> SpecialDrop for Window<T> {
 			window_destroy(self.0.duplicate().unwrap());
 			Box::<WindowData<T>>::from_raw(&mut *window_data);
 		}
+	}
+}
+
+impl<'a> Deref for WindowRef<'a> {
+	type Target = Window<void>;
+
+	fn deref(&self) -> &Self::Target {
+		//SAFETY: Same memory layout, no access to data.
+		unsafe { transmute_copy(self) }
+	}
+}
+
+impl<'a> Deref for WindowRefMut<'a> {
+	type Target = Window<void>;
+
+	fn deref(&self) -> &Self::Target {
+		//SAFETY: Same memory layout, no access to data.
+		unsafe { transmute_copy(self) }
+	}
+}
+
+impl<'a> DerefMut for WindowRefMut<'a> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		//SAFETY: Same memory layout, no access to data.
+		unsafe { transmute_copy(self) }
 	}
 }
