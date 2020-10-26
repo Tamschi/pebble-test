@@ -6,7 +6,7 @@ set -e
 cd /mnt/workspace
 cd $FOLDER
 
-# cargo clean
+cargo clean
 RUST_TARGET_PATH=/mnt/workspace \
 	cargo build --target thumbv7m-pebble-eabi #--release
 

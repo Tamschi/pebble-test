@@ -28,10 +28,10 @@ def build(ctx):
         #Wish this could be in configure, but LINKFLAGS gets reset between aplite & basalt
         os.chdir('build')
         ctx.env.LINKFLAGS.append('-Wl,--allow-multiple-definition')
-        ctx.env.LINKFLAGS += glob.glob('../../target/thumbv7m-none-eabi/release/*.a')
+        ctx.env.LINKFLAGS += glob.glob('../../target/thumbv7m-pebble-eabi/*/*.a')
         os.chdir('..')
 
-        ctx.pbl_program(source=ctx.path.ant_glob('../target/thumbv7m-none-eabi/release/*.a'),
+        ctx.pbl_program(source=ctx.path.ant_glob('../target/thumbv7m-pebble-eabi/*/*.a'),
         target=app_elf)
 
         if build_worker:
