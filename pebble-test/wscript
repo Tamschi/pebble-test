@@ -1,10 +1,3 @@
-
-#
-# This file is the default set of rules to compile a Pebble project.
-#
-# Feel free to customize this to your needs.
-#
-
 import os.path
 import os
 import glob
@@ -34,7 +27,7 @@ def build(ctx):
 
         #Wish this could be in configure, but LINKFLAGS gets reset between aplite & basalt
         os.chdir('build')
-        #ctx.env.LINKFLAGS.append('-Wl,--allow-multiple-definition')
+        ctx.env.LINKFLAGS.append('-Wl,--allow-multiple-definition')
         ctx.env.LINKFLAGS += glob.glob('../../target/thumbv7m-none-eabi/release/*.a')
         os.chdir('..')
 

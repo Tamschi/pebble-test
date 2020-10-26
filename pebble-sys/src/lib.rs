@@ -44,7 +44,7 @@ pub mod graphics {
 
 		#[repr(C)]
 		pub union GColor8 {
-			argb: u8,
+			pub argb: u8,
 		}
 
 		pub type GColor = GColor8;

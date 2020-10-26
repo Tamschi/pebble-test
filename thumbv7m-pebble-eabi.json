@@ -13,7 +13,7 @@
 	"llvm-target": "thumbv7m-linux-eabi",
 	"max-atomic-width": 32,
 	"no-compiler-rt": true,
-	"os": "none",
+	"os": "unknown",
 	"panic-strategy": "abort",
 	"relocation-model": "pic",
 	"target-c-int-width": "32",

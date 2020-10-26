@@ -50,7 +50,7 @@ RUN cd ~/pebble-dev/pebble-sdk-4.5-linux64 && bash -c "virtualenv .env; source .
 RUN . ~/.bashrc_non_interactive; pebble sdk install /root/Downloads/sdk-core-4.3.tar.bz2
 
 # Install emulator? This takes very long.
-#RUN . ~/.bashrc_non_interactive; pebble install --emulator basalt
+RUN . ~/.bashrc_non_interactive; pebble install --emulator basalt
 
 # Install and set up Rust toolchain
 # nightly is needed to build a custom std
