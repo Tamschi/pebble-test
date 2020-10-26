@@ -175,9 +175,9 @@ impl<'a, T> NumberWindow<'a, T> {
 
 impl<'a, T: ?Sized> NumberWindow<'a, T> {
 	#[must_use]
-	pub fn window<'b: 'a>(&'b self) -> WindowRef<'b> {
+	pub fn window(&self) -> WindowRef<'_> {
 		WindowRef(Handle::new(unsafe {
-			number_window_get_window_mut(self.0.as_mut_unchecked())
+			number_window_get_window_mut(&mut *(self.0.as_mut_unchecked() as *mut _))
 		}))
 	}
 

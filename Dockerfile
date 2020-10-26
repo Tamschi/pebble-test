@@ -60,7 +60,7 @@ RUN cat ~/.bashrc_non_interactive
 RUN echo $PATH
 # I have no idea why this doesn't work otherwise
 RUN . ~/.bashrc_non_interactive; rustup component add rust-src
-
+RUN . ~/.bashrc_non_interactive; rustup target add thumbv7m-none-eabi
 # Build it!
 COPY build.sh /root/build.sh
 RUN chmod +x ~/build.sh

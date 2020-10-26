@@ -1,4 +1,3 @@
-#SEE: https://github.com/andars/pebble.rs-template/blob/master/wscript
 
 #
 # This file is the default set of rules to compile a Pebble project.
@@ -35,11 +34,11 @@ def build(ctx):
 
         #Wish this could be in configure, but LINKFLAGS gets reset between aplite & basalt
         os.chdir('build')
-        ctx.env.LINKFLAGS.append('-Wl,--allow-multiple-definition')
+        #ctx.env.LINKFLAGS.append('-Wl,--allow-multiple-definition')
         ctx.env.LINKFLAGS += glob.glob('../../target/thumbv7m-none-eabi/release/*.a')
         os.chdir('..')
 
-        ctx.pbl_program(source=ctx.path.ant_glob('src/**/*.c'),
+        ctx.pbl_program(source=ctx.path.ant_glob('../target/thumbv7m-none-eabi/release/*.a'),
         target=app_elf)
 
         if build_worker:
