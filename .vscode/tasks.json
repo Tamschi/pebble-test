@@ -7,6 +7,7 @@
 			"type": "shell",
 			"args": [
 				"build",
+				"--network=\"host\"",
 				"-t",
 				"pebble-builder",
 				"\"${workspaceFolder}\""
@@ -23,6 +24,7 @@
 			"type": "shell",
 			"args": [
 				"run",
+				"--network=\"host\"",
 				"-e",
 				"\"FOLDER=pebble-test\"",
 				"--mount",

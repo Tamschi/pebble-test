@@ -12,7 +12,7 @@ RUN apt-get install -y \
 	# Rust
 	lld \
 	# Pebble emulator
-	libsdl1.2debian libfdt1 libpixman-1-0
+	libsdl1.2debian libfdt1 libpixman-1-0 libfreetype6-dev
 
 # Also Pebble.
 # This one pulls A TON of dependencies, and one of them is tzdata which is interactive by default.
@@ -50,7 +50,9 @@ RUN cd ~/pebble-dev/pebble-sdk-4.5-linux64 && bash -c "virtualenv .env; source .
 RUN . ~/.bashrc_non_interactive; pebble sdk install /root/Downloads/sdk-core-4.3.tar.bz2
 
 # Install emulator? This takes very long.
-RUN . ~/.bashrc_non_interactive; pebble install --emulator basalt
+RUN echo 'export DISPLAY=:0' >> ~/.bashrc_non_interactive
+RUN apt-get install -y x11-apps
+#RUN . ~/.bashrc_non_interactive; pebble install -v --emulator basalt #This is actually a launch command it seems
 
 # Install and set up Rust toolchain
 # nightly is needed to build a custom std

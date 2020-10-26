@@ -11,7 +11,7 @@ use pebble_sys::{
 };
 
 #[no_mangle]
-pub extern "C" fn main() {
+pub extern "C" fn main() -> i32 {
 	unsafe {
 		// let window = window_create().unwrap();
 		// window_stack_push(window, true);
@@ -21,7 +21,8 @@ pub extern "C" fn main() {
 		// 		argb: 0b_11_00_00_00,
 		// 	},
 		// );
-		app::event_loop();
+		// app::event_loop();
 		// window_destroy(window);
 	}
+	0
 }
