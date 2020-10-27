@@ -8,7 +8,7 @@ cd $FOLDER
 
 cargo clean
 RUST_TARGET_PATH=/mnt/workspace \
-	cargo build --target thumbv7m-pebble-eabi #--release
+	cargo build --target thumbv7m-pebble-eabi --release
 
 rm -rf build
 pebble build --debug

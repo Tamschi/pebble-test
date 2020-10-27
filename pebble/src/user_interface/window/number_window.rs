@@ -1,4 +1,7 @@
-use crate::{Box, Handle};
+use crate::{
+	standard_c::{CStr, NotStack},
+	Box, Handle,
+};
 use core::{
 	marker::PhantomData,
 	mem::{transmute_copy, ManuallyDrop},
@@ -7,7 +10,7 @@ use core::{
 #[allow(clippy::wildcard_imports)]
 use pebble_sys::{
 	prelude::*,
-	standard_c::memory::{c_str, void},
+	standard_c::memory::void,
 	user_interface::window::number_window::{NumberWindow as sysNumberWindow, *},
 };
 
@@ -65,7 +68,7 @@ impl<'a, T> NumberWindow<'a, T> {
 		D: 'a + FnMut(&NumberWindow<void>, &mut T),
 		S: 'a + FnMut(&NumberWindow<void>, &mut T),
 	>(
-		label: &'a c_str,
+		label: &'a CStr<impl NotStack>,
 		number_window_data: NumberWindowData<I, D, S, T>,
 	) -> Result<Self, NumberWindowData<I, D, S, T>>
 	where
@@ -129,7 +132,7 @@ impl<'a, T> NumberWindow<'a, T> {
 
 		match unsafe {
 			number_window_create(
-				label,
+				label.as_c_str(),
 				NumberWindowCallbacks {
 					incremented: Some(raw_incremented::<T>),
 					decremented: Some(raw_decremented::<T>),
@@ -186,6 +189,31 @@ impl<'a, T: ?Sized> NumberWindow<'a, T> {
 		WindowRefMut(Handle::new(unsafe {
 			number_window_get_window_mut(self.0.as_mut_unchecked())
 		}))
+	}
+
+	pub fn set_label(&self, label: &'a CStr<impl NotStack>) {
+		unsafe { number_window_set_label(self.0.as_mut_unchecked(), label.as_c_str()) }
+	}
+
+	pub fn set_max(&self, max: i32) {
+		unsafe { number_window_set_max(self.0.as_mut_unchecked(), max) }
+	}
+
+	pub fn set_min(&self, min: i32) {
+		unsafe { number_window_set_min(self.0.as_mut_unchecked(), min) }
+	}
+
+	pub fn set_value(&self, value: i32) {
+		unsafe { number_window_set_value(self.0.as_mut_unchecked(), value) }
+	}
+
+	pub fn set_step_size(&self, step_size: i32) {
+		unsafe { number_window_set_step_size(self.0.as_mut_unchecked(), step_size) }
+	}
+
+	#[must_use]
+	pub fn get_value(&self) -> i32 {
+		unsafe { number_window_get_value(&*self.0) }
 	}
 }
 

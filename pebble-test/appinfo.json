@@ -1,23 +1,25 @@
 {
-    "uuid": "a5be1daa-a6a2-4d30-ba20-e0761e4adfbe",
-    "shortName": "pebble-test",
-    "longName": "pebble-test",
-    "companyName": "Tamme Schichler",
-    "versionCode": 1,
-    "versionLabel": "0.1",
-    "sdkVersion": "3",
-    "targetPlatforms": [
-        "aplite",
-        "basalt",
-        "chalk"
-    ],
-    "watchapp": {
-        "watchface": false
-    },
-    "appKeys": {
-        "dummy": 0
-    },
-    "resources": {
-        "media": []
-    }
+	"uuid": "a5be1daa-a6a2-4d30-ba20-e0761e4adfbe",
+	"shortName": "pebble-test",
+	"longName": "pebble-test",
+	"companyName": "Tamme Schichler",
+	"versionCode": 1,
+	"versionLabel": "0.1",
+	"sdkVersion": "3",
+	"targetPlatforms": [
+		"aplite",
+		"basalt",
+		"chalk",
+		"diorite",
+		"emery"
+	],
+	"watchapp": {
+		"watchface": false
+	},
+	"appKeys": {
+		"dummy": 0
+	},
+	"resources": {
+		"media": []
+	}
 }

@@ -1,6 +1,7 @@
 #![no_std]
 #![feature(extern_types)]
 #![warn(clippy::pedantic)]
+#![allow(clippy::match_bool)]
 #![allow(clippy::module_name_repetitions)]
 
 use core::panic::PanicInfo; // Matching the SDK documentation.
@@ -18,6 +19,22 @@ pub mod foundation {
 	pub mod app {
 		extern "C" {
 			pub fn app_event_loop();
+		}
+	}
+
+	pub mod logging {
+		use crate::standard_c::memory::{c_str, int};
+
+		//TODO: Enum AppLogLevel
+
+		extern "C" {
+			pub fn app_log(
+				log_level: u8,
+				src_filename: &c_str,
+				src_line_number: int,
+				fmt: &c_str,
+				...
+			);
 		}
 	}
 }
@@ -69,6 +86,8 @@ pub mod graphics {
 
 			colors! {
 				BLUE_MOON = 0b_11_00_01_11,
+				MELON = 0b_11_11_10_10,
+				YELLOW = 0b_11_11_11_00,
 			}
 		}
 	}
@@ -318,6 +337,8 @@ pub mod standard_c {
 	pub mod memory {
 		#![allow(non_camel_case_types)]
 
+		use core::convert::TryFrom;
+
 		pub mod prelude {
 			pub use super::{
 				CastUncheckedExt, CastUncheckedMutExt, OptionCastUncheckedMutExt, UpcastExt,
@@ -438,6 +459,31 @@ pub mod standard_c {
 
 			fn upcast_mut(self) -> Self::Output {
 				self.into()
+			}
+		}
+
+		impl c_str {
+			/// Interprets a zero-terminated Rust [`str`] as [`c_str`].
+			///
+			/// # Errors
+			///
+			/// Iff `text` does not end with `'\0'`.
+			pub fn ref_from_str(text: &str) -> Result<&Self, ()> {
+				match text.ends_with('\0') {
+					true => Ok(unsafe { &*(text as *const _ as *const c_str) }),
+					false => Err(()),
+				}
+			}
+		}
+
+		impl<'a> TryFrom<&'a str> for &'a c_str {
+			type Error = ();
+
+			fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+				match value.ends_with('\0') {
+					true => Ok(unsafe { &*(value as *const _ as *const c_str) }),
+					false => Err(()),
+				}
 			}
 		}
 	}

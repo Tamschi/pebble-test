@@ -157,6 +157,36 @@ pub fn memcmp(slice1: &[u8], slice2: &[u8]) -> Ordering {
 	}
 }
 
+/// # Safety
+///
+/// This is only safe with ![`Drop`] types.
+pub unsafe fn memcpy<T>(dest: &mut [T], src: &[T]) {
+	if src.len() != dest.len() {
+		panic!("Tried to memcpy between slices of different sizes")
+	}
+
+	sys_memory::memcpy(
+		(&mut *dest).upcast_mut(),
+		src.upcast(),
+		src.len() * size_of::<T>(),
+	);
+}
+
+/// # Safety
+///
+/// This is only safe with ![`Drop`] types.
+pub unsafe fn memcpy_uninit<T>(dest: &mut [MaybeUninit<T>], src: &[T]) {
+	if src.len() != dest.len() {
+		panic!("Tried to memcpy between slices of different sizes")
+	}
+
+	sys_memory::memcpy(
+		(&mut *dest).upcast_mut(),
+		src.upcast(),
+		src.len() * size_of::<T>(),
+	);
+}
+
 /// Sets all bytes in `dest` to `c`.
 pub fn memset(dest: &mut [u8], c: u8) {
 	let len = dest.len();

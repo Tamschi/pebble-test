@@ -2,7 +2,7 @@ use super::window_stack;
 use crate::{graphics::graphics_types::Color8, Box, Handle, SpecialDrop};
 use core::{
 	marker::PhantomData,
-	mem::{transmute_copy, ManuallyDrop},
+	mem::ManuallyDrop,
 	ops::{Deref, DerefMut},
 };
 #[allow(clippy::wildcard_imports)]
@@ -220,7 +220,7 @@ impl<T: ?Sized> Window<T> {
 		window_stack::push(self, animated)
 	}
 
-	pub fn set_background_colour(&self, background_color: Color8) {
+	pub fn set_background_color(&self, background_color: Color8) {
 		unsafe { window_set_background_color(self.0.as_mut_unchecked(), background_color) }
 	}
 }
@@ -254,7 +254,7 @@ impl<'a> Deref for WindowRef<'a> {
 
 	fn deref(&self) -> &Self::Target {
 		//SAFETY: Same memory layout, no access to data.
-		unsafe { transmute_copy(self) }
+		unsafe { &*(self as *const _ as *const Window<void>) }
 	}
 }
 
@@ -263,13 +263,13 @@ impl<'a> Deref for WindowRefMut<'a> {
 
 	fn deref(&self) -> &Self::Target {
 		//SAFETY: Same memory layout, no access to data.
-		unsafe { transmute_copy(self) }
+		unsafe { &*(self as *const _ as *const Window<void>) }
 	}
 }
 
 impl<'a> DerefMut for WindowRefMut<'a> {
 	fn deref_mut(&mut self) -> &mut Self::Target {
 		//SAFETY: Same memory layout, no access to data.
-		unsafe { transmute_copy(self) }
+		unsafe { &mut *(self as *mut _ as *mut Window<void>) }
 	}
 }
