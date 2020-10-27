@@ -233,7 +233,7 @@ pub mod user_interface {
 		pub mod number_window {
 			//! A ready-made window prompting the user to pick a number.
 			//!
-			//! ![A red Pebble displaying "Set Year", "2013" and a "△ ✓ ▽" `ActionBarLayer`](https://developer.rebble.io/developer.pebble.com/assets/images/docs/c/aplite/number_window.png)
+			//! TODO: Images
 
 			use super::Window;
 			use crate::standard_c::memory::{c_str, void};
