@@ -4,7 +4,7 @@ use crate::{
 };
 use core::{
 	marker::PhantomData,
-	mem::{transmute_copy, ManuallyDrop},
+	mem::ManuallyDrop,
 	ops::{Deref, DerefMut},
 };
 #[allow(clippy::wildcard_imports)]
@@ -223,7 +223,7 @@ impl<'a, T> Deref for NumberWindow<'a, T> {
 	fn deref(&self) -> &Self::Target {
 		unsafe {
 			//SAFETY: Same memory layout, no access to data.
-			transmute_copy(self)
+			&*(self as *const _ as *const Self::Target)
 		}
 	}
 }
@@ -232,7 +232,7 @@ impl<'a, T> DerefMut for NumberWindow<'a, T> {
 	fn deref_mut(&mut self) -> &mut Self::Target {
 		unsafe {
 			//SAFETY: Same memory layout, no access to data.
-			transmute_copy(self)
+			&mut *(self as *mut _ as *mut Self::Target)
 		}
 	}
 }
