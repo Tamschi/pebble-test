@@ -54,6 +54,23 @@ pub mod graphics {
 			pub type GBitmapSequence;
 			pub type GContext;
 		}
+
+		pub mod color_definitions {
+			use super::GColor8;
+
+			macro_rules! colors {
+				($name:ident = $value:literal $(, $further_name:ident = $further_value:literal)*$(,)?) => {
+					pub const $name: GColor8 = GColor8 {
+						argb: $value,
+					};
+					$(colors!($further_name = $further_value);)*
+				};
+			}
+
+			colors! {
+				BLUE_MOON = 0b_11_00_01_11,
+			}
+		}
 	}
 }
 

@@ -1,5 +1,5 @@
 use super::window_stack;
-use crate::{Box, Handle, SpecialDrop};
+use crate::{graphics::graphics_types::Color8, Box, Handle, SpecialDrop};
 use core::{
 	marker::PhantomData,
 	mem::{transmute_copy, ManuallyDrop},
@@ -218,6 +218,10 @@ impl<T: ?Sized> Window<T> {
 	/// `animated`: Whether to animate the push using a sliding animation.
 	pub fn show(&self, animated: bool) {
 		window_stack::push(self, animated)
+	}
+
+	pub fn set_background_colour(&self, background_color: Color8) {
+		unsafe { window_set_background_color(self.0.as_mut_unchecked(), background_color) }
 	}
 }
 

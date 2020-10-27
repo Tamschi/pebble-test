@@ -21,6 +21,7 @@ use pebble_sys::standard_c::memory::free;
 use standard_c::memory::malloc;
 
 pub mod foundation;
+pub mod graphics;
 pub mod standard_c;
 pub mod user_interface;
 
