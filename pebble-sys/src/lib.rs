@@ -2,9 +2,12 @@
 #![feature(extern_types)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::match_bool)]
+// Matching the SDK documentation.
 #![allow(clippy::module_name_repetitions)]
 
-use core::panic::PanicInfo; // Matching the SDK documentation.
+use core::panic::PanicInfo;
+use foundation::logging::app_log;
+use standard_c::memory::c_str;
 
 pub mod prelude {
 	pub use super::standard_c::prelude::*;
@@ -12,6 +15,11 @@ pub mod prelude {
 
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
+	unsafe {
+		let panic = &*("### PANIC ###\0" as *const str as *const _ as *const c_str);
+		let todo = &*("TODO: Output trace somehow.\0" as *const str as *const _ as *const c_str);
+		app_log(1, panic, -1, todo);
+	}
 	loop {}
 }
 
