@@ -67,6 +67,10 @@ RUN . ~/.bashrc_non_interactive; rustup target add thumbv7m-none-eabi
 COPY build.sh /root/build.sh
 RUN chmod +x ~/build.sh
 
+# Patch SDK to work with the large amount of .o files Rust generates
+#SEE: https://github.com/pebble-rust/pebble-rust/blob/master/docs/TROUBLESHOOTING.md
+RUN sed -i -re "s@^(\s*)line = line\[6:\]\$@\1#PATCHED\n\1if not ']' in line:\n\1\1continue\n\1line = line[line.index(']') + 1:]@" ~/.pebble-sdk/SDKs/current/sdk-core/pebble/common/tools/inject_metadata.py
+
 # Mount your workspace to /mnt/workspace.
 # Set $PACKAGE to the package name you want to build.
 CMD ["sh", "-v", "/root/build.sh"]
