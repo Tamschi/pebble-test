@@ -4,7 +4,7 @@
 use debugless_unwrap::DebuglessUnwrap;
 use pebble::{
 	foundation::app,
-	graphics::graphics_types::color_definitions::MELON,
+	graphics::graphics_types::color_definitions::YELLOW,
 	log,
 	standard_c::CStr,
 	user_interface::window::number_window::{NumberWindow, NumberWindowData},
@@ -30,7 +30,7 @@ pub extern "C" fn main() -> i32 {
 	log!(100, "value set");
 	let window = number_window.window();
 	log!(100, "window gotten");
-	window.set_background_color(MELON);
+	window.set_background_color(YELLOW);
 	log!(100, "background set");
 	window.show(true);
 	log!(100, "window shown");

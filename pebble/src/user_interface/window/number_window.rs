@@ -76,7 +76,12 @@ impl<'a, T> NumberWindow<'a, T> {
 	{
 		#![allow(clippy::items_after_statements)]
 
-		let window_data = Box::leak(Box::new(number_window_data)?).upcast_mut() as *mut void;
+		let window_data_wrapper = Box::leak(
+			Box::new(NumberWindowDataWrapper(Box::new(number_window_data)?)).map_err(
+				|wrapper| Box::into_inner(unsafe { Box::downcast_unchecked(wrapper.0) }),
+			)?,
+		)
+		.upcast_mut() as *mut void;
 
 		extern "C" fn raw_incremented<'a, T>(
 			raw_window: &'a mut sysNumberWindow<'a>,
@@ -138,12 +143,17 @@ impl<'a, T> NumberWindow<'a, T> {
 					decremented: Some(raw_decremented::<T>),
 					selected: Some(raw_selected::<T>),
 				},
-				&mut *window_data,
+				&mut *window_data_wrapper,
 			)
 		} {
 			Some(raw_window) => Ok(Self(Handle::new(raw_window), PhantomData)),
 			None => Err(Box::into_inner(unsafe {
-				Box::from_raw((&mut *window_data).cast_unchecked_mut())
+				Box::downcast_unchecked(
+					Box::into_inner(Box::<NumberWindowDataWrapper>::from_raw(
+						(&mut *window_data_wrapper).cast_unchecked_mut(),
+					))
+					.0,
+				)
 			})),
 		}
 	}
