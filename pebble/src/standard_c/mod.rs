@@ -150,6 +150,14 @@ impl<T: Storage> CStr<T> {
 	///
 	/// As the name says, only if `slice` is zero-terminated and has [`Storage`] `T`.
 	#[must_use]
+	pub unsafe fn from_zero_terminated_unchecked(str: &str) -> &Self {
+		&*(str as *const _ as *const CStr<T>)
+	}
+
+	/// # Safety
+	///
+	/// As the name says, only if `slice` is zero-terminated and has [`Storage`] `T`.
+	#[must_use]
 	pub unsafe fn from_zero_terminated_unchecked_mut(str: &mut str) -> &mut Self {
 		&mut *(str as *mut _ as *mut CStr<T>)
 	}
@@ -180,5 +188,13 @@ impl CStr<Static> {
 	/// If `str` doesn't end with `'\0'`.
 	pub fn try_from_static(str: &'static str) -> Result<&'static Self, ()> {
 		str.try_into()
+	}
+
+	/// # Safety
+	///
+	/// Safe iff str is a zero-terminated str with static storage.
+	#[must_use]
+	pub unsafe fn from_static_zero_terminated_unchecked(str: &'static str) -> &'static Self {
+		CStr::<Static>::from_zero_terminated_unchecked(str)
 	}
 }

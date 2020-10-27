@@ -11,7 +11,7 @@ RUST_TARGET_PATH=/mnt/workspace \
 	cargo build --target thumbv7m-pebble-eabi --release
 
 rm -rf build
-pebble build --debug
+pebble build #--debug
 # pebble install --emulator basalt
 # pebble gdb --emulator basalt
 

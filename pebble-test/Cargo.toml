@@ -12,16 +12,14 @@ autoexamples = false
 [profile.release]
 debug = true
 opt-level = "s"
+lto = "fat"
 
-[profile.dev.package.pebble-sys]
-opt-level = 0
-
-[profile.dev.package.pebble]
-opt-level = 0
+[profile.dev]
+codegen-units = 1
+opt-level = "s"
+lto = "fat"
 
 [profile.dev.package."*"]
-codegen-units = 1
-opt-level = "z"
 
 [lib]
 name = "pebble_test"

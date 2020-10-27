@@ -24,9 +24,18 @@ macro_rules! log {
 	($log_level:expr, $message:literal) => {
 		$crate::foundation::logging::log(
 			$log_level,
-			$crate::standard_c::CStr::try_from_static(concat!(file!(), "\0")).unwrap(),
+			unsafe {
+				$crate::standard_c::CStr::from_static_zero_terminated_unchecked(concat!(
+					file!(),
+					"\0"
+				))
+				},
 			line!() as i32,
-			$crate::standard_c::CStr::try_from_static(concat!($message, "\0")).unwrap(),
+			unsafe {
+				$crate::standard_c::CStr::from_static_zero_terminated_unchecked(concat!(
+					$message, "\0"
+				))
+				},
 			)
 	};
 }

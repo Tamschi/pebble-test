@@ -92,7 +92,7 @@ pub unsafe fn resize_realloc<'a, T>(
 	let old_ptr = &mut buffer[0] as *mut T;
 	if needs_drop::<T>() && new_len < old_len {
 		for discarded in slice::from_raw_parts_mut(
-			old_ptr.offset(new_len.try_into().unwrap()),
+			old_ptr.offset(new_len.try_into().expect("`new_len` overflow")),
 			old_len - new_len,
 		) {
 			drop_in_place(discarded)
@@ -100,7 +100,7 @@ pub unsafe fn resize_realloc<'a, T>(
 	}
 	match sys_memory::realloc(
 		old_ptr as *mut _ as *mut void,
-		size.checked_mul(new_len).unwrap(),
+		size.checked_mul(new_len).expect("size overflow"),
 	) {
 		Some(new_ptr) => Ok(if old_len >= new_len {
 			ReallocOk::ShrunkenOrEqual(slice::from_raw_parts_mut(

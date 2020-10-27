@@ -5,11 +5,13 @@ use core::{
 	mem::ManuallyDrop,
 	ops::{Deref, DerefMut},
 };
+use debugless_unwrap::DebuglessUnwrapNone as _;
 #[allow(clippy::wildcard_imports)]
 use pebble_sys::{
 	standard_c::memory::void,
 	user_interface::window::{Window as sysWindow, WindowHandlers as sysWindowHandlers, *},
 };
+use unsafe_unwrap::UnsafeUnwrap;
 
 pub mod number_window;
 
@@ -115,42 +117,45 @@ impl<T> Window<T> {
 				window_get_user_data(raw_window)
 					.cast::<WindowData<T>>()
 					.as_mut()
-			}
-			.unwrap();
-			window_data.user_data = Some(window_data.window_handlers.load());
+					.unsafe_unwrap()
+			};
+			window_data
+				.user_data
+				.replace(window_data.window_handlers.load())
+				.debugless_unwrap_none();
 		}
 		extern "C" fn raw_appear<T>(raw_window: &mut sysWindow) {
 			let window_data = unsafe {
 				window_get_user_data(raw_window)
 					.cast::<WindowData<T>>()
 					.as_mut()
-			}
-			.unwrap();
+					.unsafe_unwrap()
+			};
 			window_data
 				.window_handlers
-				.appear(window_data.user_data.as_mut().unwrap());
+				.appear(unsafe { window_data.user_data.as_mut().unsafe_unwrap() });
 		}
 		extern "C" fn raw_disappear<T>(raw_window: &mut sysWindow) {
 			let window_data = unsafe {
 				window_get_user_data(raw_window)
 					.cast::<WindowData<T>>()
 					.as_mut()
-			}
-			.unwrap();
+					.unsafe_unwrap()
+			};
 			window_data
 				.window_handlers
-				.disappear(window_data.user_data.as_mut().unwrap());
+				.disappear(unsafe { window_data.user_data.as_mut().unsafe_unwrap() });
 		}
 		extern "C" fn raw_unload<T>(raw_window: &mut sysWindow) {
 			let window_data = unsafe {
 				window_get_user_data(raw_window)
 					.cast::<WindowData<T>>()
 					.as_mut()
-			}
-			.unwrap();
+					.unsafe_unwrap()
+			};
 			window_data
 				.window_handlers
-				.unload(window_data.user_data.take().unwrap());
+				.unload(unsafe { window_data.user_data.take().unsafe_unwrap() });
 		}
 
 		unsafe {
