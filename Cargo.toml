@@ -5,7 +5,19 @@ members = [
 # members = ["**/src/.."] # This also works (as an alternative), but it's very slow.
 exclude = ["target"]
 
+[patch.crates-io]
+
+[profile.release]
+debug = true
+opt-level = "s"
+lto = "fat"
+
 [profile.release.build-override]
 #opt-level = 0
 
-[patch.crates-io]
+[profile.dev]
+codegen-units = 1
+opt-level = "s"
+lto = "fat"
+
+[profile.dev.package."*"]
