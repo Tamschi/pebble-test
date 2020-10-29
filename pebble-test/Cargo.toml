@@ -1,6 +1,6 @@
 [package]
 name = "pebble-test"
-version = "0.1.0"
+version = "0.0.0"
 authors = ["Tamme Schichler <tamme@schichler.dev>"]
 edition = "2018"
 publish = false
@@ -18,4 +18,4 @@ bench = false
 
 [dependencies]
 debugless-unwrap = "0.0.4"
-pebble = { path = "../pebble" }
+pebble-skip = { path = "../pebble-skip" }
