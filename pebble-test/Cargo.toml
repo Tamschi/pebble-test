@@ -18,4 +18,4 @@ bench = false
 
 [dependencies]
 debugless-unwrap = "0.0.4"
-pebble = { path = "../pebble" }
+pebble-sys = { path = "../pebble-sys" }
