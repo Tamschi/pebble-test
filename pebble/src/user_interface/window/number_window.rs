@@ -63,6 +63,7 @@ impl<
 pub struct NumberWindowDataWrapper<'a>(Box<'a, dyn 'a + NumberWindowDataTrait>);
 
 impl<'a, T> NumberWindow<'a, T> {
+	// TODO: This probably should take and set a set of window handlers, which can then also act as lifecycle hooks for the context.
 	/// # Errors
 	///
 	/// TODO
@@ -86,7 +87,7 @@ impl<'a, T> NumberWindow<'a, T> {
 			)?,
 		) as *mut NumberWindowDataWrapper;
 
-		extern "C" fn raw_incremented<'a, T>(
+		extern "C" fn raw_incremented<'a>(
 			raw_window: &'a mut sysNumberWindow<'a>,
 			context: &mut void,
 		) {
@@ -95,7 +96,7 @@ impl<'a, T> NumberWindow<'a, T> {
 				//SAFETY: It's actually *kind of* safe to alias NumberWindow instances... But only because they store a Handle internally, which stores a pointer.
 				// Actually accessing associated data would NOT be safe, so the user-provided handlers only see a NumberWindow<void> where such access is impossible.
 				#[allow(clippy::cast_ptr_alignment)]
-				NumberWindow::<T>::from_raw(
+				NumberWindow::<void>::from_raw_unsized(
 					raw_window,
 					context as *mut _ as *mut NumberWindowDataWrapper,
 				)
@@ -111,7 +112,7 @@ impl<'a, T> NumberWindow<'a, T> {
 			}
 			fake_window.abandon();
 		}
-		extern "C" fn raw_decremented<'a, T>(
+		extern "C" fn raw_decremented<'a>(
 			raw_window: &'a mut sysNumberWindow<'a>,
 			context: &mut void,
 		) {
@@ -120,7 +121,7 @@ impl<'a, T> NumberWindow<'a, T> {
 				//SAFETY: It's actually *kind of* safe to alias NumberWindow instances... But only because they store a Handle internally, which stores a pointer.
 				// Actually accessing associated data would NOT be safe, so the user-provided handlers only see a NumberWindow<void> where such access is impossible.
 				#[allow(clippy::cast_ptr_alignment)]
-				NumberWindow::<T>::from_raw(
+				NumberWindow::<void>::from_raw_unsized(
 					raw_window,
 					context as *mut _ as *mut NumberWindowDataWrapper,
 				)
@@ -136,7 +137,7 @@ impl<'a, T> NumberWindow<'a, T> {
 			}
 			fake_window.abandon();
 		}
-		extern "C" fn raw_selected<'a, T>(
+		extern "C" fn raw_selected<'a>(
 			raw_window: &'a mut sysNumberWindow<'a>,
 			context: &mut void,
 		) {
@@ -145,7 +146,7 @@ impl<'a, T> NumberWindow<'a, T> {
 				//SAFETY: It's actually *kind of* safe to alias NumberWindow instances... But only because they store a Handle internally, which stores a pointer.
 				// Actually accessing associated data would NOT be safe, so the user-provided handlers only see a NumberWindow<void> where such access is impossible.
 				#[allow(clippy::cast_ptr_alignment)]
-				NumberWindow::<T>::from_raw(
+				NumberWindow::<void>::from_raw_unsized(
 					raw_window,
 					context as *mut _ as *mut NumberWindowDataWrapper,
 				)
@@ -166,9 +167,9 @@ impl<'a, T> NumberWindow<'a, T> {
 			number_window_create(
 				label.as_c_str(),
 				NumberWindowCallbacks {
-					incremented: Some(raw_incremented::<T>),
-					decremented: Some(raw_decremented::<T>),
-					selected: Some(raw_selected::<T>),
+					incremented: Some(raw_incremented),
+					decremented: Some(raw_decremented),
+					selected: Some(raw_selected),
 				},
 				&mut *(window_data_wrapper as *mut _ as *mut void),
 			)
@@ -223,11 +224,6 @@ impl<'a, T> NumberWindow<'a, T> {
 		let undropped = ManuallyDrop::new(self);
 		unsafe { (undropped.0.duplicate().unwrap(), undropped.2) }
 	}
-
-	/// Discards this instance while skipping the destructor. Helper for aliased temporaries.
-	fn abandon(self) {
-		let _ = ManuallyDrop::new(self);
-	}
 }
 
 impl<'a, T: ?Sized> NumberWindow<'a, T> {
@@ -268,6 +264,28 @@ impl<'a, T: ?Sized> NumberWindow<'a, T> {
 	#[must_use]
 	pub fn get_value(&self) -> i32 {
 		unsafe { number_window_get_value(&*self.0) }
+	}
+
+	/// # Safety
+	///
+	/// It's actually safe to assemble [`NumberWindow`] instances with mismatched type parameters iff the type parameter assembled against is unsized,
+	/// because this data can never be directly accessed outside the destructor.
+	///
+	/// However, dropping such a value will always panic, so adding this to the public API would be a *really* bad idea.
+	unsafe fn from_raw_unsized(
+		raw_window: &'a mut sysNumberWindow<'a>,
+		number_window_data_wrapper: *mut NumberWindowDataWrapper<'a>,
+	) -> Self {
+		Self(
+			Handle::new(raw_window),
+			PhantomData,
+			number_window_data_wrapper,
+		)
+	}
+
+	/// Discards this instance while skipping the destructor. Helper for aliased temporaries.
+	fn abandon(self) {
+		let _ = ManuallyDrop::new(self);
 	}
 }
 
