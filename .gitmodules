@@ -1,0 +1,6 @@
+[submodule "pebble"]
+	path = pebble
+	url = https://github.com/Tamschi/pebble.git
+[submodule "pebble-sys"]
+	path = pebble-sys
+	url = https://github.com/Tamschi/pebble-sys.git
