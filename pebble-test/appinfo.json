@@ -1,7 +1,7 @@
 {
 	"uuid": "a5be1daa-a6a2-4d30-ba20-e0761e4adfbe",
-	"shortName": "pebble-test",
-	"longName": "pebble-test",
+	"shortName": "unsafe!Ferris",
+	"longName": "unsafe!Ferris",
 	"companyName": "Tamme Schichler",
 	"versionCode": 1,
 	"versionLabel": "0.1",
@@ -20,6 +20,12 @@
 		"dummy": 0
 	},
 	"resources": {
-		"media": []
+		"media": [
+			{
+				"name": "UNSAFE",
+				"file": "img/unsafe-bw.tiny.png",
+				"type": "png"
+			}
+		]
 	}
 }

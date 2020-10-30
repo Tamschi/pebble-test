@@ -1,0 +1,2 @@
+This file was taken from https://github.com/rust-lang/nomicon/blob/b5f1f9d75eee0e24e4ca3c3c3ae66b50b3dcd71c/src/img/safeandunsafe.svg where the repository is dual-licensed MIT OR Apache-2.0,
+but it's originally from https://twitter.com/whoisaldeka/status/674465785557860353 under CC-BY (see https://twitter.com/whoisaldeka/status/1119992677330632705).
