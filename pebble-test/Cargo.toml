@@ -18,5 +18,5 @@ bench = false
 
 [dependencies]
 debugless-unwrap = "0.0.4"
-pebble-skip = { path = "../pebble-skip" }
-pebble-sys = { path = "../pebble-sys" }
+pebble-skip = "0.0.1"
+pebble-sys = "0.0.1"
