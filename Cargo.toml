@@ -10,6 +10,7 @@ pebble-skip = { path = "pebble-skip" }
 pebble-sys = { path = "pebble-sys" }
 
 [profile.release]
+codegen-units = 1
 debug = true
 opt-level = "s"
 lto = "fat"
